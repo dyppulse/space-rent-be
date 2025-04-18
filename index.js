@@ -2,10 +2,10 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
-import authRoutes from "./routes/auth.js"
-import spaceRoutes from "./routes/spaces.js"
-import bookingRoutes from "./routes/bookings.js"
-import { errorHandler } from "./middleware/errorHandler.js"
+import authRoutes from "./src/routes/auth.js"
+import spaceRoutes from "./src/routes/spaces.js"
+import bookingRoutes from "./src/routes/bookings.js"
+import { errorHandler } from "./src/middleware/errorHandler.js"
 
 // Load environment variables
 dotenv.config()
