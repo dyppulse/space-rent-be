@@ -6,7 +6,7 @@ import { BadRequestError, UnauthenticatedError } from "../errors/index.js"
 export const register = async (req, res) => {
   const { name, email, password, phone } = req.body
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !phone) {
     throw new BadRequestError("Please provide all required fields")
   }
 
