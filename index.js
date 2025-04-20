@@ -3,7 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
-import swaggerDocument from './swagger-output.json' assert { type: 'json' }
+import swaggerDocument from './swagger-output.json'
 import authRoutes from './src/routes/auth.js'
 import spaceRoutes from './src/routes/spaces.js'
 import bookingRoutes from './src/routes/bookings.js'

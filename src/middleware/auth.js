@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { UnauthenticatedError } from '../errors/index.js'
 
-export const authenticateUser = async (req, res, next) => {
+export const authenticateUser = async (req, _res, next) => {
   // Check for auth header
   const authHeader = req.headers.authorization
 
@@ -22,6 +22,7 @@ export const authenticateUser = async (req, res, next) => {
     }
 
     next()
+    // eslint-disable-next-line no-unused-vars
   } catch (error) {
     throw new UnauthenticatedError('Authentication invalid')
   }
