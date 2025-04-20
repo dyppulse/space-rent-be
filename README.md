@@ -14,13 +14,13 @@ This is the backend codebase for the **Space Rental Platform MVP** focused on **
 
 ## 🧰 Tech Stack
 
-| Layer          | Technology         |
-|----------------|--------------------|
-| Backend        | Node.js, Express   |
-| Database       | PostgreSQL (or MongoDB) |
-| Auth           | JWT (Email & Password) |
-| Image Uploads  | Cloudinary / S3 / Firebase Storage |
-| Notifications  | Email (e.g., Nodemailer) |
+| Layer         | Technology                         |
+| ------------- | ---------------------------------- |
+| Backend       | Node.js, Express                   |
+| Database      | PostgreSQL (or MongoDB)            |
+| Auth          | JWT (Email & Password)             |
+| Image Uploads | Cloudinary / S3 / Firebase Storage |
+| Notifications | Email (e.g., Nodemailer)           |
 
 ---
 
@@ -45,10 +45,12 @@ src/
 ### 👥 User Management
 
 **Space Owners:**
+
 - Sign up / Login
 - Create / Edit / Delete listings
 
 **Clients (No login required):**
+
 - Book spaces by submitting a form with:
   - Name
   - Email
@@ -56,6 +58,7 @@ src/
   - Event Date
 
 ### 🏢 Space Listings
+
 - List available spaces
 - View detailed info per space
 - Multiple images
@@ -63,6 +66,7 @@ src/
 - Price per hour/day
 
 ### 📝 Booking Flow
+
 - "Book Now" form sends booking info to backend
 - Saves booking in DB
 - Sends email notification to space owner (optional)
@@ -110,6 +114,7 @@ pnpm dev
 ```
 
 ### 5. How to generate API docs
+
 ```
 node swagger.js
 ```
@@ -120,36 +125,36 @@ node swagger.js
 
 ### `Users` (Space Owners)
 
-| Field     | Type     |
-|-----------|----------|
-| id        | UUID     |
-| name      | String   |
-| email     | String   |
-| password  | String (hashed) |
+| Field    | Type            |
+| -------- | --------------- |
+| id       | UUID            |
+| name     | String          |
+| email    | String          |
+| password | String (hashed) |
 
 ### `Spaces`
 
-| Field        | Type     |
-|--------------|----------|
-| id           | UUID     |
-| owner_id     | UUID     |
-| name         | String   |
-| description  | Text     |
-| location     | String   |
-| price        | Number   |
-| images       | Array    |
-| amenities    | Array    |
+| Field       | Type   |
+| ----------- | ------ |
+| id          | UUID   |
+| owner_id    | UUID   |
+| name        | String |
+| description | Text   |
+| location    | String |
+| price       | Number |
+| images      | Array  |
+| amenities   | Array  |
 
 ### `Bookings`
 
-| Field        | Type     |
-|--------------|----------|
-| id           | UUID     |
-| space_id     | UUID     |
-| name         | String   |
-| email        | String   |
-| phone        | String   |
-| event_date   | Date     |
+| Field      | Type   |
+| ---------- | ------ |
+| id         | UUID   |
+| space_id   | UUID   |
+| name       | String |
+| email      | String |
+| phone      | String |
+| event_date | Date   |
 
 ---
 

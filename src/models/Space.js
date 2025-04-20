@@ -1,34 +1,34 @@
-import mongoose from "mongoose"
+import mongoose from 'mongoose'
 
 const spaceSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Please provide a space name"],
+      required: [true, 'Please provide a space name'],
       trim: true,
-      maxlength: [100, "Name cannot be more than 100 characters"],
+      maxlength: [100, 'Name cannot be more than 100 characters'],
     },
     description: {
       type: String,
-      required: [true, "Please provide a description"],
-      maxlength: [1000, "Description cannot be more than 1000 characters"],
+      required: [true, 'Please provide a description'],
+      maxlength: [1000, 'Description cannot be more than 1000 characters'],
     },
     location: {
       address: {
         type: String,
-        required: [true, "Please provide an address"],
+        required: [true, 'Please provide an address'],
       },
       city: {
         type: String,
-        required: [true, "Please provide a city"],
+        required: [true, 'Please provide a city'],
       },
       state: {
         type: String,
-        required: [true, "Please provide a state"],
+        required: [true, 'Please provide a state'],
       },
       zipCode: {
         type: String,
-        required: [true, "Please provide a zip code"],
+        required: [true, 'Please provide a zip code'],
       },
       coordinates: {
         lat: {
@@ -42,12 +42,12 @@ const spaceSchema = new mongoose.Schema(
     price: {
       amount: {
         type: Number,
-        required: [true, "Please provide a price"],
+        required: [true, 'Please provide a price'],
       },
       unit: {
         type: String,
-        enum: ["hour", "day", "event"],
-        default: "day",
+        enum: ['hour', 'day', 'event'],
+        default: 'day',
       },
     },
     capacity: {
@@ -55,8 +55,8 @@ const spaceSchema = new mongoose.Schema(
     },
     spaceType: {
       type: String,
-      enum: ["event venue", "wedding location", "studio", "conference room", "other"],
-      required: [true, "Please provide a space type"],
+      enum: ['event venue', 'wedding location', 'studio', 'conference room', 'other'],
+      required: [true, 'Please provide a space type'],
     },
     amenities: {
       type: [String],
@@ -68,8 +68,8 @@ const spaceSchema = new mongoose.Schema(
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Please provide space owner"],
+      ref: 'User',
+      required: [true, 'Please provide space owner'],
     },
     isActive: {
       type: Boolean,
@@ -80,20 +80,25 @@ const spaceSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  },
+  }
 )
 
 // Virtual for bookings
-spaceSchema.virtual("bookings", {
-  ref: "Booking",
-  localField: "_id",
-  foreignField: "space",
+spaceSchema.virtual('bookings', {
+  ref: 'Booking',
+  localField: '_id',
+  foreignField: 'space',
   justOne: false,
 })
 
 // Index for search
-spaceSchema.index({ "location.city": "text", "location.state": "text", name: "text", spaceType: "text" })
+spaceSchema.index({
+  'location.city': 'text',
+  'location.state': 'text',
+  name: 'text',
+  spaceType: 'text',
+})
 
-const Space = mongoose.model("Space", spaceSchema)
+const Space = mongoose.model('Space', spaceSchema)
 
 export default Space

@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express'
 import {
   createSpace,
   getAllSpaces,
@@ -8,25 +8,25 @@ import {
   deleteSpace,
   addSpaceImages,
   removeSpaceImage,
-} from "../controllers/spaceController.js";
-import { authenticateUser } from "../middleware/auth.js";
+} from '../controllers/spaceController.js'
+import { authenticateUser } from '../middleware/auth.js'
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", getAllSpaces);
+router.get('/', getAllSpaces)
 
-router.get("/:id", getSpace);
+router.get('/:id', getSpace)
 
-router.post("/", authenticateUser, createSpace);
+router.post('/', authenticateUser, createSpace)
 
-router.get("/owner/my-spaces", authenticateUser, getMySpaces);
+router.get('/owner/my-spaces', authenticateUser, getMySpaces)
 
-router.patch("/:id", authenticateUser, updateSpace);
+router.patch('/:id', authenticateUser, updateSpace)
 
-router.delete("/:id", authenticateUser, deleteSpace);
+router.delete('/:id', authenticateUser, deleteSpace)
 
-router.post("/:id/images", authenticateUser, addSpaceImages);
+router.post('/:id/images', authenticateUser, addSpaceImages)
 
-router.delete("/:id/images", authenticateUser, removeSpaceImage);
+router.delete('/:id/images', authenticateUser, removeSpaceImage)
 
-export default router;
+export default router
