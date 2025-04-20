@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res) => {
   console.log(err)
 
   const defaultError = {
