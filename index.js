@@ -2,6 +2,8 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger.js';
 import authRoutes from "./src/routes/auth.js"
 import spaceRoutes from "./src/routes/spaces.js"
 import bookingRoutes from "./src/routes/bookings.js"
@@ -13,8 +15,13 @@ dotenv.config()
 // Initialize express app
 const app = express()
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Middleware
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -32,7 +39,7 @@ app.get("/health", (req, res) => {
 app.use(errorHandler)
 
 // Connect to MongoDB and start server
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 4000
 
 mongoose
   .connect(process.env.MONGODB_URI)
