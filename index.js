@@ -2,8 +2,8 @@ import express from "express"
 import cors from "cors"
 import dotenv from "dotenv"
 import mongoose from "mongoose"
-import swaggerUi from 'swagger-ui-express';
-import swaggerSpec from './swagger.js';
+import swaggerUi from 'swagger-ui-express'
+import swaggerDocument from './swagger-output.json' assert { type: 'json' }
 import authRoutes from "./src/routes/auth.js"
 import spaceRoutes from "./src/routes/spaces.js"
 import bookingRoutes from "./src/routes/bookings.js"
@@ -15,7 +15,7 @@ dotenv.config()
 // Initialize express app
 const app = express()
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 // Middleware
 app.use(cors({

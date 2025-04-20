@@ -1,22 +1,23 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerAutogen from 'swagger-autogen';
 
-const options = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Space Rent',
-      version: '1.0.0',
-      description: 'Rent space',
-    },
-    servers: [
-      {
-        url: 'http://localhost:4000', // Change this based on your server
-      },
-    ],
+const doc = {
+  info: {
+    title: 'Space Rental API',
+    description: 'Auto-generated Swagger documentation',
   },
-  apis: ['./src/routes/*.js'], // Path to the API docs (adjust to your project structure)
-};
+  host: 'localhost:4000', // or your deployed host
+  schemes: ['http'],
+  securityDefinitions: {
+    bearerAuth: {
+      type: 'apiKey',
+      in: 'header',
+      name: 'Authorization',
+      description: 'JWT Authorization header using the Bearer scheme.',
+    },
+  },
+}
 
-const swaggerSpec = swaggerJSDoc(options);
+const outputFile = './swagger-output.json'
+const endpointsFiles = ['./index.js'] // or wherever you define your Express routes
 
-export default swaggerSpec;
+swaggerAutogen(outputFile, endpointsFiles, doc)

@@ -109,6 +109,11 @@ EMAIL_PASS=your_email_password
 pnpm dev
 ```
 
+### 5. How to generate API docs
+```
+node swagger.js
+```
+
 ---
 
 ## 🗃️ Database Schema Overview
