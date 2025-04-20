@@ -1,21 +1,21 @@
-import mongoose from "mongoose"
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
+import mongoose from 'mongoose'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Please provide a name"],
+      required: [true, 'Please provide a name'],
       trim: true,
-      maxlength: [50, "Name cannot be more than 50 characters"],
+      maxlength: [50, 'Name cannot be more than 50 characters'],
     },
     email: {
       type: String,
-      required: [true, "Please provide an email"],
+      required: [true, 'Please provide an email'],
       match: [
         /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-        "Please provide a valid email",
+        'Please provide a valid email',
       ],
       unique: true,
       trim: true,
@@ -23,8 +23,8 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Please provide a password"],
-      minlength: [6, "Password must be at least 6 characters"],
+      required: [true, 'Please provide a password'],
+      minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
     phone: {
@@ -33,16 +33,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["owner"],
-      default: "owner",
+      enum: ['owner'],
+      default: 'owner',
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 )
 
 // Hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next()
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next()
 
   const salt = await bcrypt.genSalt(10)
   this.password = await bcrypt.hash(this.password, salt)
@@ -57,10 +57,10 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 // Generate JWT token
 userSchema.methods.createJWT = function () {
   return jwt.sign({ userId: this._id, name: this.name, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_LIFETIME || "30d",
+    expiresIn: process.env.JWT_LIFETIME || '30d',
   })
 }
 
-const User = mongoose.model("User", userSchema)
+const User = mongoose.model('User', userSchema)
 
 export default User

@@ -1,36 +1,36 @@
-import nodemailer from "nodemailer"
-import dotenv from "dotenv"
+import nodemailer from 'nodemailer'
+import dotenv from 'dotenv'
 
 dotenv.config()
 
 // Create a transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.example.com",
+  host: process.env.EMAIL_HOST || 'smtp.example.com',
   port: process.env.EMAIL_PORT || 587,
-  secure: process.env.EMAIL_SECURE === "true",
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
-    user: process.env.EMAIL_USER || "user@example.com",
-    pass: process.env.EMAIL_PASSWORD || "password",
+    user: process.env.EMAIL_USER || 'user@example.com',
+    pass: process.env.EMAIL_PASSWORD || 'password',
   },
 })
 
 // Format date for email
 const formatDate = (dateString) => {
   const date = new Date(dateString)
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   })
 }
 
 // Format time for email
 const formatTime = (timeString) => {
   const time = new Date(timeString)
-  return time.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
+  return time.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -49,7 +49,7 @@ export const sendBookingConfirmationEmail = async ({
   const formattedEndTime = formatTime(endTime)
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || "noreply@spacerental.com",
+    from: process.env.EMAIL_FROM || 'noreply@spacerental.com',
     to,
     subject: `Booking Confirmation - ${spaceName}`,
     html: `

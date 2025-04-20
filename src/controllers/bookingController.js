@@ -1,9 +1,9 @@
-import Booking from "../models/Booking.js"
-import Space from "../models/Space.js"
-import { StatusCodes } from "http-status-codes"
-import { BadRequestError, NotFoundError, UnauthorizedError } from "../errors/index.js"
-import mongoose from "mongoose"
-import { sendBookingConfirmationEmail } from "../utils/emailService.js"
+import Booking from '../models/Booking.js'
+import Space from '../models/Space.js'
+import { StatusCodes } from 'http-status-codes'
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
+import mongoose from 'mongoose'
+import { sendBookingConfirmationEmail } from '../utils/emailService.js'
 
 // Create a new booking (public endpoint)
 export const createBooking = async (req, res) => {
@@ -20,8 +20,16 @@ export const createBooking = async (req, res) => {
     specialRequests,
   } = req.body
 
-  if (!spaceId || !clientName || !clientEmail || !clientPhone || !eventDate || !startTime || !endTime) {
-    throw new BadRequestError("Please provide all required fields")
+  if (
+    !spaceId ||
+    !clientName ||
+    !clientEmail ||
+    !clientPhone ||
+    !eventDate ||
+    !startTime ||
+    !endTime
+  ) {
+    throw new BadRequestError('Please provide all required fields')
   }
 
   // Check if space exists and is active
@@ -41,11 +49,11 @@ export const createBooking = async (req, res) => {
         endTime: { $gt: new Date(startTime) },
       },
     ],
-    status: { $ne: "cancelled" },
+    status: { $ne: 'cancelled' },
   })
 
   if (conflictingBooking) {
-    throw new BadRequestError("The space is already booked for this time")
+    throw new BadRequestError('The space is already booked for this time')
   }
 
   // Calculate total price based on duration and space price
@@ -54,9 +62,9 @@ export const createBooking = async (req, res) => {
   const durationHours = (end - start) / (1000 * 60 * 60)
 
   let totalPrice
-  if (space.price.unit === "hour") {
+  if (space.price.unit === 'hour') {
     totalPrice = space.price.amount * durationHours
-  } else if (space.price.unit === "day") {
+  } else if (space.price.unit === 'day') {
     const durationDays = Math.ceil(durationHours / 24)
     totalPrice = space.price.amount * durationDays
   } else {
@@ -77,7 +85,7 @@ export const createBooking = async (req, res) => {
     attendees,
     specialRequests,
     totalPrice,
-    status: "pending",
+    status: 'pending',
   })
 
   // Optional: Send confirmation email
@@ -92,7 +100,7 @@ export const createBooking = async (req, res) => {
       totalPrice,
     })
   } catch (error) {
-    console.error("Failed to send confirmation email:", error)
+    console.error('Failed to send confirmation email:', error)
     // Continue with the booking process even if email fails
   }
 
@@ -116,7 +124,7 @@ export const getOwnerBookings = async (req, res) => {
   const queryObject = { space: { $in: spaceIds } }
 
   // Filter by status
-  if (status && ["pending", "confirmed", "cancelled"].includes(status)) {
+  if (status && ['pending', 'confirmed', 'cancelled'].includes(status)) {
     queryObject.status = status
   }
 
@@ -140,9 +148,9 @@ export const getOwnerBookings = async (req, res) => {
   // Sorting
   let sortOptions = { eventDate: 1 } // Default sort by event date (ascending)
 
-  if (sort === "latest") {
+  if (sort === 'latest') {
     sortOptions = { createdAt: -1 }
-  } else if (sort === "oldest") {
+  } else if (sort === 'oldest') {
     sortOptions = { createdAt: 1 }
   }
 
@@ -151,10 +159,14 @@ export const getOwnerBookings = async (req, res) => {
   const limit = Number(req.query.limit) || 10
   const skip = (page - 1) * limit
 
-  const bookings = await Booking.find(queryObject).sort(sortOptions).skip(skip).limit(limit).populate({
-    path: "space",
-    select: "name location images price",
-  })
+  const bookings = await Booking.find(queryObject)
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limit)
+    .populate({
+      path: 'space',
+      select: 'name location images price',
+    })
 
   const totalBookings = await Booking.countDocuments(queryObject)
   const numOfPages = Math.ceil(totalBookings / limit)
@@ -172,12 +184,12 @@ export const getBooking = async (req, res) => {
   const { id: bookingId } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new BadRequestError("Invalid booking ID")
+    throw new BadRequestError('Invalid booking ID')
   }
 
   const booking = await Booking.findById(bookingId).populate({
-    path: "space",
-    select: "name location images price owner",
+    path: 'space',
+    select: 'name location images price owner',
   })
 
   if (!booking) {
@@ -186,7 +198,7 @@ export const getBooking = async (req, res) => {
 
   // Check if the user is the owner of the space
   if (booking.space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError("Not authorized to view this booking")
+    throw new UnauthorizedError('Not authorized to view this booking')
   }
 
   res.status(StatusCodes.OK).json({ booking })
@@ -198,16 +210,16 @@ export const updateBookingStatus = async (req, res) => {
   const { status } = req.body
 
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new BadRequestError("Invalid booking ID")
+    throw new BadRequestError('Invalid booking ID')
   }
 
-  if (!status || !["confirmed", "cancelled"].includes(status)) {
-    throw new BadRequestError("Please provide a valid status (confirmed or cancelled)")
+  if (!status || !['confirmed', 'cancelled'].includes(status)) {
+    throw new BadRequestError('Please provide a valid status (confirmed or cancelled)')
   }
 
   const booking = await Booking.findById(bookingId).populate({
-    path: "space",
-    select: "owner",
+    path: 'space',
+    select: 'owner',
   })
 
   if (!booking) {
@@ -216,7 +228,7 @@ export const updateBookingStatus = async (req, res) => {
 
   // Check if the user is the owner of the space
   if (booking.space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError("Not authorized to update this booking")
+    throw new UnauthorizedError('Not authorized to update this booking')
   }
 
   booking.status = status
@@ -226,7 +238,7 @@ export const updateBookingStatus = async (req, res) => {
   try {
     // Implementation of email notification would go here
   } catch (error) {
-    console.error("Failed to send status update email:", error)
+    console.error('Failed to send status update email:', error)
   }
 
   res.status(StatusCodes.OK).json({ booking })
@@ -253,15 +265,15 @@ export const getBookingStats = async (req, res) => {
   // Get counts by status
   const [totalBookings, pendingBookings, confirmedBookings, cancelledBookings] = await Promise.all([
     Booking.countDocuments({ space: { $in: spaceIds } }),
-    Booking.countDocuments({ space: { $in: spaceIds }, status: "pending" }),
-    Booking.countDocuments({ space: { $in: spaceIds }, status: "confirmed" }),
-    Booking.countDocuments({ space: { $in: spaceIds }, status: "cancelled" }),
+    Booking.countDocuments({ space: { $in: spaceIds }, status: 'pending' }),
+    Booking.countDocuments({ space: { $in: spaceIds }, status: 'confirmed' }),
+    Booking.countDocuments({ space: { $in: spaceIds }, status: 'cancelled' }),
   ])
 
   // Get upcoming bookings (future events that are confirmed)
   const upcomingBookings = await Booking.countDocuments({
     space: { $in: spaceIds },
-    status: "confirmed",
+    status: 'confirmed',
     eventDate: { $gte: new Date() },
   })
 
@@ -270,13 +282,13 @@ export const getBookingStats = async (req, res) => {
     {
       $match: {
         space: { $in: spaceIds },
-        status: "confirmed",
+        status: 'confirmed',
       },
     },
     {
       $group: {
         _id: null,
-        totalRevenue: { $sum: "$totalPrice" },
+        totalRevenue: { $sum: '$totalPrice' },
       },
     },
   ])

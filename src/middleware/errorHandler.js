@@ -1,19 +1,19 @@
-import { StatusCodes } from "http-status-codes"
+import { StatusCodes } from 'http-status-codes'
 
 export const errorHandler = (err, req, res, next) => {
   console.log(err)
 
   const defaultError = {
     statusCode: err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
-    msg: err.message || "Something went wrong, try again later",
+    msg: err.message || 'Something went wrong, try again later',
   }
 
   // Validation errors
-  if (err.name === "ValidationError") {
+  if (err.name === 'ValidationError') {
     defaultError.statusCode = StatusCodes.BAD_REQUEST
     defaultError.msg = Object.values(err.errors)
       .map((item) => item.message)
-      .join(", ")
+      .join(', ')
   }
 
   // Duplicate key error
@@ -23,7 +23,7 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Cast error (invalid ID)
-  if (err.name === "CastError") {
+  if (err.name === 'CastError') {
     defaultError.statusCode = StatusCodes.BAD_REQUEST
     defaultError.msg = `Invalid ${err.path}: ${err.value}`
   }
