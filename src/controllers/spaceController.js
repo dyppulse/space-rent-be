@@ -90,13 +90,23 @@ export const getSpace = async (req, res) => {
   const { id: spaceId } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-    throw new BadRequestError('Invalid space ID')
+    const error = new BadRequestError('Invalid space ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const space = await Space.findOne({ _id: spaceId, isActive: true })
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   res.status(StatusCodes.OK).json({ space })
@@ -117,19 +127,34 @@ export const updateSpace = async (req, res) => {
   const { id: spaceId } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-    throw new BadRequestError('Invalid space ID')
+    const error = new BadRequestError('Invalid space ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Find the space first to check ownership
   const space = await Space.findById(spaceId)
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to update this space')
+    const error = new UnauthorizedError('Not authorized to update this space')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Update the space
@@ -146,19 +171,34 @@ export const deleteSpace = async (req, res) => {
   const { id: spaceId } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-    throw new BadRequestError('Invalid space ID')
+    const error = new BadRequestError('Invalid space ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Find the space first to check ownership
   const space = await Space.findById(spaceId)
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to delete this space')
+    const error = new UnauthorizedError('Not authorized to delete this space')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Soft delete by setting isActive to false
@@ -173,23 +213,43 @@ export const addSpaceImages = async (req, res) => {
   const { images } = req.body
 
   if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-    throw new BadRequestError('Invalid space ID')
+    const error = new BadRequestError('Invalid space ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   if (!images || !Array.isArray(images)) {
-    throw new BadRequestError('Please provide an array of image URLs')
+    const error = new BadRequestError('Please provide an array of image URLs')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Find the space first to check ownership
   const space = await Space.findById(spaceId)
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to update this space')
+    const error = new UnauthorizedError('Not authorized to update this space')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Add new images to the existing ones
@@ -208,23 +268,43 @@ export const removeSpaceImage = async (req, res) => {
   const { imageUrl } = req.body
 
   if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-    throw new BadRequestError('Invalid space ID')
+    const error = new BadRequestError('Invalid space ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   if (!imageUrl) {
-    throw new BadRequestError('Please provide the image URL to remove')
+    const error = new BadRequestError('Please provide the image URL to remove')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Find the space first to check ownership
   const space = await Space.findById(spaceId)
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to update this space')
+    const error = new UnauthorizedError('Not authorized to update this space')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Remove the image from the array
