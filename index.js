@@ -3,7 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
-import swaggerDocument from './swagger-output.json'
+import { readFile } from 'fs/promises'
 import authRoutes from './src/routes/auth.js'
 import spaceRoutes from './src/routes/spaces.js'
 import bookingRoutes from './src/routes/bookings.js'
@@ -14,8 +14,8 @@ dotenv.config()
 
 // Initialize express app
 const app = express()
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
+const swaggerOutput = JSON.parse(await readFile(new URL('./swagger-output.json', import.meta.url)))
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput))
 
 // Middleware
 app.use(
