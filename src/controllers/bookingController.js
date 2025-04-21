@@ -29,14 +29,24 @@ export const createBooking = async (req, res) => {
     !startTime ||
     !endTime
   ) {
-    throw new BadRequestError('Please provide all required fields')
+    const error = new BadRequestError('Please provide all required fields')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if space exists and is active
   const space = await Space.findOne({ _id: spaceId, isActive: true })
 
   if (!space) {
-    throw new NotFoundError(`No space found with id ${spaceId}`)
+    const error = new NotFoundError(`No space found with id ${spaceId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the space is already booked for the requested time
@@ -53,7 +63,12 @@ export const createBooking = async (req, res) => {
   })
 
   if (conflictingBooking) {
-    throw new BadRequestError('The space is already booked for this time')
+    const error = new BadRequestError('The space is already booked for this time')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Calculate total price based on duration and space price
@@ -184,7 +199,12 @@ export const getBooking = async (req, res) => {
   const { id: bookingId } = req.params
 
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new BadRequestError('Invalid booking ID')
+    const error = new BadRequestError('Invalid booking ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const booking = await Booking.findById(bookingId).populate({
@@ -193,12 +213,22 @@ export const getBooking = async (req, res) => {
   })
 
   if (!booking) {
-    throw new NotFoundError(`No booking found with id ${bookingId}`)
+    const error = new NotFoundError(`No booking found with id ${bookingId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (booking.space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to view this booking')
+    const error = new UnauthorizedError('Not authorized to view this booking')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   res.status(StatusCodes.OK).json({ booking })
@@ -210,11 +240,21 @@ export const updateBookingStatus = async (req, res) => {
   const { status } = req.body
 
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new BadRequestError('Invalid booking ID')
+    const error = new BadRequestError('Invalid booking ID')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   if (!status || !['confirmed', 'cancelled'].includes(status)) {
-    throw new BadRequestError('Please provide a valid status (confirmed or cancelled)')
+    const error = new BadRequestError('Please provide a valid status (confirmed or cancelled)')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const booking = await Booking.findById(bookingId).populate({
@@ -223,12 +263,22 @@ export const updateBookingStatus = async (req, res) => {
   })
 
   if (!booking) {
-    throw new NotFoundError(`No booking found with id ${bookingId}`)
+    const error = new NotFoundError(`No booking found with id ${bookingId}`)
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   // Check if the user is the owner of the space
   if (booking.space.owner.toString() !== req.user.userId) {
-    throw new UnauthorizedError('Not authorized to update this booking')
+    const error = new UnauthorizedError('Not authorized to update this booking')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   booking.status = status

@@ -35,18 +35,33 @@ export const login = async (req, res) => {
   const { email, password } = req.body
 
   if (!email || !password) {
-    throw new BadRequestError('Please provide email and password')
+    const error = new BadRequestError('Please provide email and password')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const user = await User.findOne({ email }).select('+password')
 
   if (!user) {
-    throw new UnauthenticatedError('Invalid credentials')
+    const error = new UnauthenticatedError('Invalid credentials')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const isPasswordCorrect = await user.comparePassword(password)
   if (!isPasswordCorrect) {
-    throw new UnauthenticatedError('Invalid credentials')
+    const error = new UnauthenticatedError('Invalid credentials')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const token = user.createJWT()
@@ -67,7 +82,12 @@ export const getCurrentUser = async (req, res) => {
   const user = await User.findById(req.user.userId)
 
   if (!user) {
-    throw new UnauthenticatedError('User not found')
+    const error = new UnauthenticatedError('User not found')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   res.status(StatusCodes.OK).json({
@@ -85,7 +105,12 @@ export const updateProfile = async (req, res) => {
   const { name, phone } = req.body
 
   if (!name) {
-    throw new BadRequestError('Name is required')
+    const error = new BadRequestError('Name is required')
+    // Use the error object to construct the response
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+    })
   }
 
   const user = await User.findByIdAndUpdate(
