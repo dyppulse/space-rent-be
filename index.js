@@ -8,6 +8,7 @@ import authRoutes from './src/routes/auth.js'
 import spaceRoutes from './src/routes/spaces.js'
 import bookingRoutes from './src/routes/bookings.js'
 import { errorHandler } from './src/middleware/errorHandler.js'
+import { v2 as cloudinary } from 'cloudinary'
 
 // Load environment variables
 dotenv.config()
@@ -16,6 +17,14 @@ dotenv.config()
 const app = express()
 const swaggerOutput = JSON.parse(await readFile(new URL('./swagger-output.json', import.meta.url)))
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput))
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+})
 
 // Middleware
 app.use(
