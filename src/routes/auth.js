@@ -1,4 +1,5 @@
 import express from 'express'
+
 import { register, login, getCurrentUser, updateProfile } from '../controllers/authController.js'
 import { authenticateUser } from '../middleware/auth.js'
 

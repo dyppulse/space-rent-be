@@ -62,10 +62,12 @@ const spaceSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    images: {
-      type: [String],
-      default: [],
-    },
+    images: [
+      {
+        public_id: { type: String, required: true },
+        url: { type: String, required: true },
+      },
+    ],
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

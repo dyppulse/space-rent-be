@@ -1,6 +1,7 @@
-import User from '../models/User.js'
 import { StatusCodes } from 'http-status-codes'
+
 import { BadRequestError, UnauthenticatedError } from '../errors/index.js'
+import User from '../models/User.js'
 
 // Register a new user (space owner)
 export const register = async (req, res) => {
