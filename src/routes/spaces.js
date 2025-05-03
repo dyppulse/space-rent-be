@@ -1,4 +1,6 @@
+import { v2 as cloudinary } from 'cloudinary'
 import express from 'express'
+
 import {
   createSpace,
   getAllSpaces,
@@ -10,8 +12,6 @@ import {
   removeSpaceImage,
 } from '../controllers/spaceController.js'
 import { authenticateUser } from '../middleware/auth.js'
-import { v2 as cloudinary } from 'cloudinary'
-
 import { upload } from '../middleware/multer.js'
 
 const router = express.Router()

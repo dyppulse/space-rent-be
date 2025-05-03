@@ -1,8 +1,9 @@
+import { StatusCodes } from 'http-status-codes'
+import mongoose from 'mongoose'
+
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Booking from '../models/Booking.js'
 import Space from '../models/Space.js'
-import { StatusCodes } from 'http-status-codes'
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
-import mongoose from 'mongoose'
 import { sendBookingConfirmationEmail } from '../utils/emailService.js'
 
 // Create a new booking (public endpoint)

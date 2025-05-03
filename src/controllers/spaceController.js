@@ -1,8 +1,9 @@
-import Space from '../models/Space.js'
 import { StatusCodes } from 'http-status-codes'
-import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
-import { uploadImagesToCloudinary } from '../utils/uploadImagesToCloudinary.js'
 import mongoose from 'mongoose'
+
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
+import Space from '../models/Space.js'
+import { uploadImagesToCloudinary } from '../utils/uploadImagesToCloudinary.js'
 
 // Create a new space listing
 export const createSpace = async (req, res) => {

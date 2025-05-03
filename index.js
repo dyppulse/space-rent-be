@@ -1,14 +1,16 @@
-import express from 'express'
+import { readFile } from 'fs/promises'
+
+import { v2 as cloudinary } from 'cloudinary'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import express from 'express'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
-import { readFile } from 'fs/promises'
-import authRoutes from './src/routes/auth.js'
-import spaceRoutes from './src/routes/spaces.js'
-import bookingRoutes from './src/routes/bookings.js'
+
 import { errorHandler } from './src/middleware/errorHandler.js'
-import { v2 as cloudinary } from 'cloudinary'
+import authRoutes from './src/routes/auth.js'
+import bookingRoutes from './src/routes/bookings.js'
+import spaceRoutes from './src/routes/spaces.js'
 
 // Load environment variables
 dotenv.config()
