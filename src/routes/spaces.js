@@ -11,25 +11,12 @@ import {
 } from '../controllers/spaceController.js'
 import { authenticateUser } from '../middleware/auth.js'
 import { v2 as cloudinary } from 'cloudinary'
-import multer from 'multer'
-import fs from 'fs'
 
-// Configure multer for temporary storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (!fs.existsSync('./uploads')) {
-      fs.mkdirSync('./uploads', { recursive: true })
-    }
-    cb(null, './uploads/')
-  },
-  filename: function (req, file, cb) {
-    cb(null, new Date().toISOString().replace(/:/g, '-') + '-' + file.originalname)
-  },
-})
-
-const upload = multer({ storage: storage })
+import { upload } from '../middleware/multer.js'
 
 const router = express.Router()
+
+router.post('/spaces', upload.array('images'), createSpace)
 
 router.get('/', getAllSpaces)
 
@@ -46,70 +33,6 @@ router.delete('/:id', authenticateUser, deleteSpace)
 router.post('/:id/images', authenticateUser, addSpaceImages)
 
 router.delete('/:id/images', authenticateUser, removeSpaceImage)
-
-// GET endpoint to retrieve images for a specific space
-router.get('/:spaceId/images', async (req, res) => {
-  try {
-    const { spaceId } = req.params
-
-    const result = await cloudinary.search
-      .expression(`folder:spaces/${spaceId}`)
-      .sort_by('created_at', 'desc')
-      .max_results(30)
-      .execute()
-
-    res.json(result)
-  } catch (error) {
-    console.error('Error fetching space images from Cloudinary:', error)
-    res.status(500).json({ error: 'Failed to fetch images' })
-  }
-})
-
-// POST endpoint to upload multiple images for a space
-router.post('/:spaceId/images', upload.array('images', 10), async (req, res) => {
-  try {
-    const { spaceId } = req.params
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files provided' })
-    }
-
-    const uploadPromises = req.files.map((file) => {
-      return cloudinary.uploader.upload(file.path, {
-        folder: `spaces/${spaceId}`,
-        resource_type: 'auto',
-        transformation: [
-          // Create a thumbnail version
-          { width: 500, height: 300, crop: 'fill', quality: 'auto' },
-        ],
-      })
-    })
-
-    const results = await Promise.all(uploadPromises)
-
-    // Clean up temporary files
-    req.files.forEach((file) => {
-      if (fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path)
-      }
-    })
-
-    res.json(results)
-  } catch (error) {
-    console.error('Error uploading to Cloudinary:', error)
-
-    // Clean up temporary files if they exist
-    if (req.files) {
-      req.files.forEach((file) => {
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path)
-        }
-      })
-    }
-
-    res.status(500).json({ error: 'Failed to upload images' })
-  }
-})
 
 // DELETE endpoint to remove an image
 router.delete('/images/:publicId', async (req, res) => {

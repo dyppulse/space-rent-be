@@ -1,15 +1,30 @@
 import Space from '../models/Space.js'
 import { StatusCodes } from 'http-status-codes'
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
+import { uploadImagesToCloudinary } from '../utils/uploadImagesToCloudinary.js'
 import mongoose from 'mongoose'
 
 // Create a new space listing
 export const createSpace = async (req, res) => {
-  req.body.owner = req.user.userId
+  try {
+    req.body.owner = req.user.userId
 
-  const space = await Space.create(req.body)
+    // Upload images if they exist
+    let images = []
+    if (req.files && req.files.length > 0) {
+      images = await uploadImagesToCloudinary(req.files)
+    }
 
-  res.status(StatusCodes.CREATED).json({ space })
+    // Attach image data to space
+    req.body.images = images
+
+    const space = await Space.create(req.body)
+
+    res.status(StatusCodes.CREATED).json({ space })
+  } catch (error) {
+    console.error(error)
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Something went wrong' })
+  }
 }
 
 // Get all spaces (public endpoint)
