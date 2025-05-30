@@ -16,13 +16,11 @@ import { upload } from '../middleware/multer.js'
 
 const router = express.Router()
 
-router.post('/spaces', upload.array('images'), createSpace)
-
 router.get('/', getAllSpaces)
 
 router.get('/:id', getSpace)
 
-router.post('/', authenticateUser, createSpace)
+router.post('/', authenticateUser, upload.array('images', 10), createSpace)
 
 router.get('/owner/my-spaces', authenticateUser, getMySpaces)
 

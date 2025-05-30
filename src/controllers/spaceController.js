@@ -8,8 +8,6 @@ import { uploadImagesToCloudinary } from '../utils/uploadImagesToCloudinary.js'
 // Create a new space listing
 export const createSpace = async (req, res) => {
   try {
-    req.body.owner = req.user.userId
-
     // Upload images if they exist
     let images = []
     if (req.files && req.files.length > 0) {
@@ -17,9 +15,8 @@ export const createSpace = async (req, res) => {
     }
 
     // Attach image data to space
-    req.body.images = images
 
-    const space = await Space.create(req.body)
+    const space = await Space.create({ ...req.body, owner: req.user.userId, images })
 
     res.status(StatusCodes.CREATED).json({ space })
   } catch (error) {

@@ -28,7 +28,7 @@ const spaceSchema = new mongoose.Schema(
       },
       zipCode: {
         type: String,
-        required: [true, 'Please provide a zip code'],
+        required: false,
       },
       coordinates: {
         lat: {
@@ -55,7 +55,7 @@ const spaceSchema = new mongoose.Schema(
     },
     spaceType: {
       type: String,
-      enum: ['event venue', 'wedding location', 'studio', 'conference room', 'other'],
+      // enum: ['event venue', 'wedding location', 'studio', 'conference room', 'other'],
       required: [true, 'Please provide a space type'],
     },
     amenities: {
