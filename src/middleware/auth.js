@@ -6,6 +6,8 @@ export const authenticateUser = async (req, _res, next) => {
   // Check for auth header
   const authHeader = req.headers.authorization
 
+  console.log(authHeader, 'authHeader')
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new UnauthenticatedError('Authentication invalid')
   }

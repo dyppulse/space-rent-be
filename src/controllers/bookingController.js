@@ -16,7 +16,6 @@ export const createBooking = async (req, res, next) => {
     eventDate,
     startTime,
     endTime,
-    eventType,
     attendees,
     specialRequests,
   } = req.body
@@ -98,7 +97,6 @@ export const createBooking = async (req, res, next) => {
       eventDate: new Date(eventDate),
       startTime: new Date(startTime),
       endTime: new Date(endTime),
-      eventType,
       attendees,
       specialRequests,
       totalPrice,

@@ -39,18 +39,6 @@ const bookingSchema = new mongoose.Schema(
       type: Date,
       required: [true, 'End time is required'],
     },
-    eventType: {
-      type: String,
-      trim: true,
-    },
-    attendees: {
-      type: Number,
-      default: 1,
-    },
-    specialRequests: {
-      type: String,
-      trim: true,
-    },
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
