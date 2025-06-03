@@ -28,7 +28,7 @@ export const createSpace = async (req, res, next) => {
 // Get all spaces (public endpoint)
 export const getAllSpaces = async (req, res, next) => {
   try {
-    const { search, city, state, spaceType, minPrice, maxPrice, sort } = req.query
+    const { search, city, state, spaceType, minPrice, maxPrice, sort, capacity } = req.query
 
     const queryObject = { isActive: true }
 
@@ -53,18 +53,27 @@ export const getAllSpaces = async (req, res, next) => {
 
     // Filter by price range
     if (minPrice || maxPrice) {
-      queryObject.price = {}
+      queryObject['price.amount'] = {}
 
       if (minPrice) {
-        queryObject.price.amount = { $gte: Number(minPrice) }
+        queryObject['price.amount'].$gte = Number(minPrice)
       }
 
       if (maxPrice) {
-        if (queryObject.price.amount) {
-          queryObject.price.amount.$lte = Number(maxPrice)
-        } else {
-          queryObject.price.amount = { $lte: Number(maxPrice) }
-        }
+        queryObject['price.amount'].$lte = Number(maxPrice)
+      }
+    }
+
+    // Filter by capacity
+    if (capacity && capacity !== 'any') {
+      if (capacity === 'small') {
+        queryObject.capacity = { $lte: 20 }
+      } else if (capacity === 'medium') {
+        queryObject.capacity = { $gte: 21, $lte: 50 }
+      } else if (capacity === 'large') {
+        queryObject.capacity = { $gte: 51, $lte: 100 }
+      } else if (capacity === 'xl') {
+        queryObject.capacity = { $gt: 100 }
       }
     }
 
