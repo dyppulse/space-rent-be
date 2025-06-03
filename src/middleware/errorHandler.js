@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 
-export const errorHandler = (err, req, res) => {
+// eslint-disable-next-line no-unused-vars
+export const errorHandler = (err, req, res, _next) => {
   console.log(err)
 
   const defaultError = {
@@ -8,7 +9,7 @@ export const errorHandler = (err, req, res) => {
     msg: err.message || 'Something went wrong, try again later',
   }
 
-  // Validation errors
+  // Validation errors (e.g. Mongoose schema validation)
   if (err.name === 'ValidationError') {
     defaultError.statusCode = StatusCodes.BAD_REQUEST
     defaultError.msg = Object.values(err.errors)
@@ -16,13 +17,13 @@ export const errorHandler = (err, req, res) => {
       .join(', ')
   }
 
-  // Duplicate key error
+  // Duplicate key error (e.g. unique constraint violation)
   if (err.code && err.code === 11000) {
     defaultError.statusCode = StatusCodes.BAD_REQUEST
     defaultError.msg = `${Object.keys(err.keyValue)} field has to be unique`
   }
 
-  // Cast error (invalid ID)
+  // CastError (e.g. invalid ObjectId)
   if (err.name === 'CastError') {
     defaultError.statusCode = StatusCodes.BAD_REQUEST
     defaultError.msg = `Invalid ${err.path}: ${err.value}`
