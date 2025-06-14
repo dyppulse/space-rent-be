@@ -18,3 +18,23 @@ export const uploadImagesToCloudinary = async (files, folder = 'spaces') => {
 
   return uploads
 }
+
+/**
+ * Deletes an image from Cloudinary using its public_id
+ * @param {string} publicId - The public_id of the image stored in Cloudinary
+ * @returns {Promise<void>}
+ */
+export const deleteFromCloudinary = async (publicId) => {
+  try {
+    if (!publicId) {
+      throw new Error('publicId is required to delete an image from Cloudinary')
+    }
+
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: 'image',
+    })
+  } catch (error) {
+    console.error(`❌ Failed to delete image from Cloudinary: ${error.message}`)
+    throw error
+  }
+}
