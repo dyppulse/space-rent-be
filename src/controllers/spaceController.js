@@ -3,7 +3,10 @@ import mongoose from 'mongoose'
 
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Space from '../models/Space.js'
-import { uploadImagesToCloudinary } from '../utils/uploadImagesToCloudinary.js'
+import {
+  uploadImagesToCloudinary,
+  deleteFromCloudinary,
+} from '../utils/uploadImagesToCloudinary.js'
 
 // Create a new space listing
 export const createSpace = async (req, res, next) => {
@@ -156,51 +159,64 @@ export const getMySpaces = async (req, res, next) => {
   }
 }
 
-// Update a space
+// Update space
 export const updateSpace = async (req, res, next) => {
   try {
     const { id: spaceId } = req.params
 
     if (!mongoose.Types.ObjectId.isValid(spaceId)) {
-      const error = new BadRequestError('Invalid space ID')
-      // Use the error object to construct the response
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-      })
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ success: false, message: 'Invalid space ID' })
     }
 
-    // Find the space first to check ownership
     const space = await Space.findById(spaceId)
-
     if (!space) {
-      const error = new NotFoundError(`No space found with id ${spaceId}`)
-      // Use the error object to construct the response
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-      })
+      return res.status(StatusCodes.NOT_FOUND).json({ success: false, message: 'Space not found' })
     }
 
-    // Check if the user is the owner of the space
     if (space.owner.toString() !== req.user.userId) {
-      const error = new UnauthorizedError('Not authorized to update this space')
-      // Use the error object to construct the response
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
+      return res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' })
+    }
+
+    // Handle new image uploads
+    let uploadedImages = []
+    if (req.files && req.files.length > 0) {
+      uploadedImages = await uploadImagesToCloudinary(req.files) // Returns array of image objects
+    }
+
+    // Handle image removals
+    const removeImagesRaw = req.body.imagesToRemove
+    const imagesToRemove = removeImagesRaw ? JSON.parse(removeImagesRaw) : []
+
+    if (imagesToRemove.length > 0) {
+      for (const imageUrl of imagesToRemove) {
+        await deleteFromCloudinary(imageUrl) // Delete from Cloudinary
+      }
+
+      // Remove from MongoDB
+      await Space.findByIdAndUpdate(spaceId, {
+        $pull: { images: { url: { $in: imagesToRemove } } },
       })
     }
 
-    // Update the space
-    const updatedSpace = await Space.findByIdAndUpdate(spaceId, req.body, {
-      new: true,
-      runValidators: true,
-    })
+    // Merge image additions
+    const updatedSpace = await Space.findByIdAndUpdate(
+      spaceId,
+      {
+        ...req.body,
+        $push: { images: { $each: uploadedImages } },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    )
 
     res.status(StatusCodes.OK).json({ space: updatedSpace })
-  } catch (err) {
-    next(err)
+  } catch (error) {
+    console.error(error)
+    next(error)
   }
 }
 

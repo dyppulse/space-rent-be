@@ -24,7 +24,7 @@ router.post('/', authenticateUser, upload.array('images', 10), createSpace)
 
 router.get('/owner/my-spaces', authenticateUser, getMySpaces)
 
-router.patch('/:id', authenticateUser, updateSpace)
+router.patch('/:id', authenticateUser, upload.array('images', 10), updateSpace)
 
 router.delete('/:id', authenticateUser, deleteSpace)
 
