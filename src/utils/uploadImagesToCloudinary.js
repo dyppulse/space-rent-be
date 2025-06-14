@@ -38,3 +38,20 @@ export const deleteFromCloudinary = async (publicId) => {
     throw error
   }
 }
+
+export const deleteMultipleFromCloudinary = async (publicIds = []) => {
+  if (!Array.isArray(publicIds) || publicIds.length === 0) return
+
+  try {
+    await Promise.all(
+      publicIds.map((id) =>
+        cloudinary.uploader.destroy(id, {
+          resource_type: 'image',
+        })
+      )
+    )
+  } catch (err) {
+    console.error(`❌ Bulk deletion failed: ${err.message}`)
+    throw err
+  }
+}
