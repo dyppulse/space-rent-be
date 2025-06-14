@@ -6,6 +6,7 @@ import Space from '../models/Space.js'
 import {
   uploadImagesToCloudinary,
   deleteFromCloudinary,
+  deleteMultipleFromCloudinary,
 } from '../utils/uploadImagesToCloudinary.js'
 
 // Create a new space listing
@@ -227,40 +228,45 @@ export const deleteSpace = async (req, res, next) => {
 
     if (!mongoose.Types.ObjectId.isValid(spaceId)) {
       const error = new BadRequestError('Invalid space ID')
-      // Use the error object to construct the response
       return res.status(error.statusCode).json({
         success: false,
         message: error.message,
       })
     }
 
-    // Find the space first to check ownership
+    // Find the space to validate ownership and fetch images
     const space = await Space.findById(spaceId)
 
     if (!space) {
       const error = new NotFoundError(`No space found with id ${spaceId}`)
-      // Use the error object to construct the response
       return res.status(error.statusCode).json({
         success: false,
         message: error.message,
       })
     }
 
-    // Check if the user is the owner of the space
+    // Check if the user is the owner
     if (space.owner.toString() !== req.user.userId) {
       const error = new UnauthorizedError('Not authorized to delete this space')
-      // Use the error object to construct the response
       return res.status(error.statusCode).json({
         success: false,
         message: error.message,
       })
     }
 
-    // Soft delete by setting isActive to false
-    await Space.findByIdAndUpdate(spaceId, { isActive: false }, { new: true })
+    // Delete all associated images from Cloudinary
+    const publicIds = (space.images || []).map((img) => img.public_id).filter(Boolean)
 
-    res.status(StatusCodes.OK).json({ message: 'Space removed successfully' })
+    if (publicIds.length > 0) {
+      await deleteMultipleFromCloudinary(publicIds)
+    }
+
+    // Hard delete from MongoDB
+    await Space.findByIdAndDelete(spaceId)
+
+    res.status(StatusCodes.OK).json({ message: 'Space deleted successfully' })
   } catch (err) {
+    console.error(err)
     next(err)
   }
 }
