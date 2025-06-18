@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises'
 
 import { v2 as cloudinary } from 'cloudinary'
 import cors from 'cors'
-import dotenv from 'dotenv'
+import dotenv from 'dotenv-safe'
 import express from 'express'
 import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
@@ -13,7 +13,10 @@ import bookingRoutes from './src/routes/bookings.js'
 import spaceRoutes from './src/routes/spaces.js'
 
 // Load environment variables
-dotenv.config()
+dotenv.config({
+  example: '.env.example', // default, optional
+  allowEmptyValues: false, // make sure all values are non-empty
+})
 
 // Initialize express app
 const app = express()
@@ -29,7 +32,11 @@ cloudinary.config({
 })
 
 // Middleware
-const allowedOrigins = ['http://localhost:5173', 'https://space-rent-fe.vercel.app']
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://space-rent-fe.vercel.app',
+  process.env.FRONTEND_APP_URL,
+]
 
 app.use(
   cors({
