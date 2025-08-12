@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises'
 
 import { v2 as cloudinary } from 'cloudinary'
+import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import dotenv from 'dotenv-safe'
 import express from 'express'
@@ -50,6 +51,7 @@ app.use(
     credentials: true,
   })
 )
+app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
