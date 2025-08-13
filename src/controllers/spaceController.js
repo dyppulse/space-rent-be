@@ -32,7 +32,24 @@ export const createSpace = async (req, res, next) => {
 // Get all spaces (public endpoint)
 export const getAllSpaces = async (req, res, next) => {
   try {
-    const { search, city, state, spaceType, minPrice, maxPrice, sort, capacity } = req.query
+    const {
+      search,
+      city,
+      state,
+      district,
+      county,
+      subCounty,
+      parish,
+      village,
+      spaceType,
+      minPrice,
+      maxPrice,
+      sort,
+      capacity,
+      nearLng,
+      nearLat,
+      nearKm,
+    } = req.query
 
     const queryObject = { isActive: true }
 
@@ -41,7 +58,7 @@ export const getAllSpaces = async (req, res, next) => {
       queryObject.$text = { $search: search }
     }
 
-    // Filter by location
+    // Filter by location (legacy + Uganda hierarchy)
     if (city) {
       queryObject['location.city'] = { $regex: city, $options: 'i' }
     }
@@ -49,6 +66,12 @@ export const getAllSpaces = async (req, res, next) => {
     if (state) {
       queryObject['location.state'] = { $regex: state, $options: 'i' }
     }
+
+    if (district) queryObject['location.district'] = { $regex: district, $options: 'i' }
+    if (county) queryObject['location.county'] = { $regex: county, $options: 'i' }
+    if (subCounty) queryObject['location.subCounty'] = { $regex: subCounty, $options: 'i' }
+    if (parish) queryObject['location.parish'] = { $regex: parish, $options: 'i' }
+    if (village) queryObject['location.village'] = { $regex: village, $options: 'i' }
 
     // Filter by space type
     if (spaceType) {
@@ -98,6 +121,17 @@ export const getAllSpaces = async (req, res, next) => {
     const page = Number(req.query.page) || 1
     const limit = Number(req.query.limit) || 10
     const skip = (page - 1) * limit
+
+    // Optional geospatial filter
+    if (nearLng && nearLat) {
+      const maxDistanceMeters = Number(nearKm || 10) * 1000
+      queryObject['location.point'] = {
+        $near: {
+          $geometry: { type: 'Point', coordinates: [Number(nearLng), Number(nearLat)] },
+          $maxDistance: maxDistanceMeters,
+        },
+      }
+    }
 
     const spaces = await Space.find(queryObject).sort(sortOptions).skip(skip).limit(limit)
 
