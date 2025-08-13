@@ -9,6 +9,7 @@ import mongoose from 'mongoose'
 import swaggerUi from 'swagger-ui-express'
 
 import { errorHandler } from './src/middleware/errorHandler.js'
+import adminRoutes from './src/routes/admin.js'
 import authRoutes from './src/routes/auth.js'
 import bookingRoutes from './src/routes/bookings.js'
 import spaceRoutes from './src/routes/spaces.js'
@@ -59,6 +60,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/spaces', spaceRoutes)
 app.use('/api/bookings', bookingRoutes)
+app.use('/api/admin', adminRoutes)
 
 // Health check route
 app.get('/health', (req, res) => {

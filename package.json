@@ -12,7 +12,8 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "swagger": "node swagger.js"
+    "swagger": "node swagger.js",
+    "seed:admin": "node src/scripts/seedAdmin.js"
   },
   "husky": {
     "hooks": {

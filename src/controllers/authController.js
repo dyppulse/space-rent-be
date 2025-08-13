@@ -38,6 +38,7 @@ export const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role,
       },
     })
   } catch (err) {
@@ -99,6 +100,7 @@ export const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role,
       },
     })
   } catch (err) {
@@ -125,6 +127,7 @@ export const getCurrentUser = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      role: user.role,
     },
   })
 }

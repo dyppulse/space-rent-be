@@ -30,3 +30,12 @@ export const authenticateUser = async (req, _res, next) => {
     throw new UnauthenticatedError('Authentication invalid')
   }
 }
+
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, _res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      throw new UnauthenticatedError('Not authorized')
+    }
+    next()
+  }
+}
