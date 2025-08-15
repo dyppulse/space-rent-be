@@ -18,13 +18,53 @@ const spaceSchema = new mongoose.Schema(
         type: String,
         required: [true, 'Please provide an address'],
       },
+      // Uganda hierarchy (denormalized for simplicity). Consider seeding canonical lists if needed.
+      district: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      county: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      subCounty: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      parish: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      village: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      // GeoJSON point for maps and geospatial queries
+      point: {
+        type: {
+          type: String,
+          enum: ['Point'],
+          default: 'Point',
+        },
+        coordinates: {
+          type: [Number], // [lng, lat]
+          index: '2dsphere',
+          default: undefined,
+        },
+      },
+      // Legacy fields kept for backward compatibility (non-required)
       city: {
         type: String,
-        required: [true, 'Please provide a city'],
+        required: false,
       },
       state: {
         type: String,
-        required: [true, 'Please provide a state'],
+        required: false,
       },
       zipCode: {
         type: String,
@@ -93,13 +133,20 @@ spaceSchema.virtual('bookings', {
   justOne: false,
 })
 
-// Index for search
+// Text index for keyword search across select fields
 spaceSchema.index({
-  'location.city': 'text',
-  'location.state': 'text',
+  'location.district': 'text',
+  'location.county': 'text',
+  'location.subCounty': 'text',
+  'location.village': 'text',
+  'location.city': 'text', // legacy support
+  'location.state': 'text', // legacy support
   name: 'text',
   spaceType: 'text',
 })
+
+// Geospatial index for near queries
+spaceSchema.index({ 'location.point': '2dsphere' })
 
 const Space = mongoose.model('Space', spaceSchema)
 

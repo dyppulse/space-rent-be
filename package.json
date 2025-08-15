@@ -12,7 +12,8 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "swagger": "node swagger.js"
+    "swagger": "node swagger.js",
+    "seed:admin": "node src/scripts/seedAdmin.js"
   },
   "husky": {
     "hooks": {
@@ -31,6 +32,7 @@
   "packageManager": "pnpm@10.8.1",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.6",
     "cloudinary": "^2.6.0",
     "cors": "^2.8.5",
     "dotenv-safe": "^9.1.0",

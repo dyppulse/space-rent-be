@@ -21,14 +21,25 @@ export const register = async (req, res, next) => {
     const user = await User.create({ name, email, password, phone })
     const token = user.createJWT()
 
+    const isProd = process.env.NODE_ENV === 'production'
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    }
+
+    res.cookie('token', token, cookieOptions)
+
     res.status(StatusCodes.CREATED).json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role,
       },
-      token,
     })
   } catch (err) {
     next(err)
@@ -72,14 +83,25 @@ export const login = async (req, res, next) => {
 
     const token = user.createJWT()
 
+    const isProd = process.env.NODE_ENV === 'production'
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    }
+
+    res.cookie('token', token, cookieOptions)
+
     res.status(StatusCodes.OK).json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
+        role: user.role,
       },
-      token,
     })
   } catch (err) {
     next(err)
@@ -105,8 +127,22 @@ export const getCurrentUser = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      role: user.role,
     },
   })
+}
+
+// Logout user
+export const logout = async (_req, res) => {
+  const isProd = process.env.NODE_ENV === 'production'
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    path: '/',
+  }
+  res.clearCookie('token', cookieOptions)
+  res.status(StatusCodes.OK).json({ success: true })
 }
 
 // Update user profile
