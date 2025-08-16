@@ -49,7 +49,16 @@ const bookingSchema = new mongoose.Schema(
       required: [true, 'Total price is required'],
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform: function (doc, ret) {
+        ret.id = ret._id
+        delete ret._id
+        return ret
+      },
+    },
+  }
 )
 
 // Ensure end time is after start time

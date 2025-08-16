@@ -155,14 +155,7 @@ export const createUser = async (req, res, next) => {
     })
 
     res.status(StatusCodes.CREATED).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
+      user,
     })
   } catch (err) {
     next(err)
@@ -193,14 +186,7 @@ export const updateUser = async (req, res, next) => {
     )
 
     res.status(StatusCodes.OK).json({
-      user: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone,
-        role: updatedUser.role,
-        updatedAt: updatedUser.updatedAt,
-      },
+      user: updatedUser,
     })
   } catch (err) {
     next(err)
