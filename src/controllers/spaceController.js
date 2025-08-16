@@ -53,9 +53,37 @@ export const getAllSpaces = async (req, res, next) => {
 
     const queryObject = { isActive: true }
 
-    // Search functionality
+    // Search functionality - Enhanced search across multiple fields
     if (search) {
-      queryObject.$text = { $search: search }
+      // Create multiple search patterns for better matching
+      const exactSearch = search.trim()
+      const words = exactSearch.split(' ').filter((word) => word.length > 0)
+
+      // Create an OR query for multiple searchable fields
+      queryObject.$or = [
+        // Exact match (highest priority)
+        { name: { $regex: `^${exactSearch}$`, $options: 'i' } },
+        { spaceType: { $regex: `^${exactSearch}$`, $options: 'i' } },
+
+        // Contains the full search term
+        { name: { $regex: exactSearch, $options: 'i' } },
+        { spaceType: { $regex: exactSearch, $options: 'i' } },
+        { 'location.district': { $regex: exactSearch, $options: 'i' } },
+        { 'location.county': { $regex: exactSearch, $options: 'i' } },
+        { 'location.subCounty': { $regex: exactSearch, $options: 'i' } },
+        { 'location.village': { $regex: exactSearch, $options: 'i' } },
+        { 'location.city': { $regex: exactSearch, $options: 'i' } },
+        { 'location.state': { $regex: exactSearch, $options: 'i' } },
+        { 'location.address': { $regex: exactSearch, $options: 'i' } },
+        { description: { $regex: exactSearch, $options: 'i' } },
+        { amenities: { $regex: exactSearch, $options: 'i' } },
+
+        // Partial word matches (for multi-word searches like "Miranda Keller")
+        ...words.map((word) => ({ name: { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ spaceType: { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ 'location.city': { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ 'location.district': { $regex: word, $options: 'i' } })),
+      ]
     }
 
     // Filter by location (legacy + Uganda hierarchy)
@@ -111,6 +139,14 @@ export const getAllSpaces = async (req, res, next) => {
       sortOptions = { 'price.amount': 1 }
     } else if (sort === 'price-high') {
       sortOptions = { 'price.amount': -1 }
+    } else if (sort === 'rating') {
+      sortOptions = { rating: -1 } // Sort by rating (highest first)
+    } else if (sort === 'newest') {
+      sortOptions = { createdAt: -1 } // Sort by newest
+    } else if (sort === 'recommended') {
+      // For recommended, we could implement a scoring algorithm
+      // For now, default to newest
+      sortOptions = { createdAt: -1 }
     } else if (sort === 'name-a-z') {
       sortOptions = { name: 1 }
     } else if (sort === 'name-z-a') {
