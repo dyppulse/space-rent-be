@@ -32,7 +32,16 @@ const taxonomySchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform: function (doc, ret) {
+        ret.id = ret._id
+        delete ret._id
+        return ret
+      },
+    },
+  }
 )
 
 taxonomySchema.index({ type: 1, key: 1 }, { unique: true })

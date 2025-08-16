@@ -61,6 +61,15 @@ userSchema.methods.createJWT = function () {
   })
 }
 
+// Transform _id to id for consistency with frontend
+userSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    ret.id = ret._id
+    delete ret._id
+    return ret
+  },
+})
+
 const User = mongoose.model('User', userSchema)
 
 export default User

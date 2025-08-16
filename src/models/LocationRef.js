@@ -11,7 +11,16 @@ const locationRefSchema = new mongoose.Schema(
     village: { type: String, required: false, trim: true },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform: function (doc, ret) {
+        ret.id = ret._id
+        delete ret._id
+        return ret
+      },
+    },
+  }
 )
 
 locationRefSchema.index(

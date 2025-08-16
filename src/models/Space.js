@@ -120,7 +120,14 @@ const spaceSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id
+        delete ret._id
+        return ret
+      },
+    },
     toObject: { virtuals: true },
   }
 )
