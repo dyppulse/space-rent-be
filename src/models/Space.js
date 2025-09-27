@@ -18,28 +18,59 @@ const spaceSchema = new mongoose.Schema(
         type: String,
         required: [true, 'Please provide an address'],
       },
-      // Uganda hierarchy (denormalized for simplicity). Consider seeding canonical lists if needed.
-      district: {
-        type: String,
+      // Hierarchical location references
+      region: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Region',
         required: false,
-        trim: true,
+      },
+      district: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'District',
+        required: false,
       },
       county: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'County',
         required: false,
-        trim: true,
       },
-      subCounty: {
-        type: String,
+      subcounty: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subcounty',
         required: false,
-        trim: true,
       },
       parish: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Parish',
+        required: false,
+      },
+      village: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Village',
+        required: false,
+      },
+      // Legacy string fields for backward compatibility
+      districtName: {
         type: String,
         required: false,
         trim: true,
       },
-      village: {
+      countyName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      subCountyName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      parishName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      villageName: {
         type: String,
         required: false,
         trim: true,
