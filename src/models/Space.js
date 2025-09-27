@@ -18,28 +18,59 @@ const spaceSchema = new mongoose.Schema(
         type: String,
         required: [true, 'Please provide an address'],
       },
-      // Uganda hierarchy (denormalized for simplicity). Consider seeding canonical lists if needed.
-      district: {
-        type: String,
+      // Hierarchical location references
+      region: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Region',
         required: false,
-        trim: true,
+      },
+      district: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'District',
+        required: false,
       },
       county: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'County',
         required: false,
-        trim: true,
       },
-      subCounty: {
-        type: String,
+      subcounty: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subcounty',
         required: false,
-        trim: true,
       },
       parish: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Parish',
+        required: false,
+      },
+      village: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Village',
+        required: false,
+      },
+      // Legacy string fields for backward compatibility
+      districtName: {
         type: String,
         required: false,
         trim: true,
       },
-      village: {
+      countyName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      subCountyName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      parishName: {
+        type: String,
+        required: false,
+        trim: true,
+      },
+      villageName: {
         type: String,
         required: false,
         trim: true,
@@ -49,12 +80,11 @@ const spaceSchema = new mongoose.Schema(
         type: {
           type: String,
           enum: ['Point'],
-          default: 'Point',
+          required: false,
         },
         coordinates: {
           type: [Number], // [lng, lat]
-          index: '2dsphere',
-          default: undefined,
+          required: false,
         },
       },
       // Legacy fields kept for backward compatibility (non-required)
@@ -94,9 +124,15 @@ const spaceSchema = new mongoose.Schema(
       type: Number,
     },
     spaceType: {
-      type: String,
-      // enum: ['event venue', 'wedding location', 'studio', 'conference room', 'other'],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SpaceType',
       required: [true, 'Please provide a space type'],
+    },
+    // Legacy field for backward compatibility
+    spaceTypeName: {
+      type: String,
+      required: false,
+      trim: true,
     },
     amenities: {
       type: [String],
@@ -154,6 +190,25 @@ spaceSchema.index({
 
 // Geospatial index for near queries
 spaceSchema.index({ 'location.point': '2dsphere' })
+
+// Pre-save middleware to handle geospatial point validation
+spaceSchema.pre('save', function (next) {
+  // Only create point if coordinates are provided
+  if (
+    this.location &&
+    this.location.point &&
+    this.location.point.coordinates &&
+    this.location.point.coordinates.length === 2
+  ) {
+    // Ensure the point has the correct structure
+    this.location.point.type = 'Point'
+    // coordinates should be [longitude, latitude]
+  } else if (this.location && this.location.point) {
+    // If point exists but no valid coordinates, remove it
+    delete this.location.point
+  }
+  next()
+})
 
 const Space = mongoose.model('Space', spaceSchema)
 

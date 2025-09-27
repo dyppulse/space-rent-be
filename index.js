@@ -12,7 +12,9 @@ import { errorHandler } from './src/middleware/errorHandler.js'
 import adminRoutes from './src/routes/admin.js'
 import authRoutes from './src/routes/auth.js'
 import bookingRoutes from './src/routes/bookings.js'
+import locationRoutes from './src/routes/locations.js'
 import spaceRoutes from './src/routes/spaces.js'
+import spaceTypeRoutes from './src/routes/spaceTypes.js'
 
 // Load environment variables
 dotenv.config({
@@ -59,8 +61,10 @@ app.use(express.urlencoded({ extended: true }))
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/spaces', spaceRoutes)
+app.use('/api/space-types', spaceTypeRoutes)
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/locations', locationRoutes)
 
 // Health check route
 app.get('/health', (req, res) => {
