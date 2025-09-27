@@ -18,11 +18,11 @@ import {
   createLocation,
   updateLocation,
   deleteLocation,
-  getAllTaxonomies,
-  createTaxonomy,
-  updateTaxonomy,
-  deleteTaxonomy,
-  reorderTaxonomies,
+  getAllAmenities,
+  createAmenity,
+  updateAmenity,
+  deleteAmenity,
+  reorderAmenities,
 } from '../controllers/adminController.js'
 import { authenticateUser, authorizeRoles } from '../middleware/auth.js'
 
@@ -73,22 +73,17 @@ router
   .patch(authenticateUser, authorizeRoles('superadmin'), updateLocation)
   .delete(authenticateUser, authorizeRoles('superadmin'), deleteLocation)
 
-// Taxonomies Management
+// Amenities Management
 router
-  .route('/taxonomies')
-  .get(authenticateUser, authorizeRoles('superadmin'), getAllTaxonomies)
-  .post(authenticateUser, authorizeRoles('superadmin'), createTaxonomy)
+  .route('/amenities')
+  .get(getAllAmenities) // Make public like space types
+  .post(authenticateUser, authorizeRoles('superadmin'), createAmenity)
 
 router
-  .route('/taxonomies/:id')
-  .patch(authenticateUser, authorizeRoles('superadmin'), updateTaxonomy)
-  .delete(authenticateUser, authorizeRoles('superadmin'), deleteTaxonomy)
+  .route('/amenities/:id')
+  .patch(authenticateUser, authorizeRoles('superadmin'), updateAmenity)
+  .delete(authenticateUser, authorizeRoles('superadmin'), deleteAmenity)
 
-router.patch(
-  '/taxonomies/reorder',
-  authenticateUser,
-  authorizeRoles('superadmin'),
-  reorderTaxonomies
-)
+router.patch('/amenities/reorder', authenticateUser, authorizeRoles('superadmin'), reorderAmenities)
 
 export default router

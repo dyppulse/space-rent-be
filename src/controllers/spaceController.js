@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Space from '../models/Space.js'
 import SpaceType from '../models/SpaceType.js'
+import logger from '../utils/logger.js'
 import {
   uploadImagesToCloudinary,
   deleteFromCloudinary,
@@ -13,10 +14,18 @@ import {
 // Create a new space listing
 export const createSpace = async (req, res, next) => {
   try {
+    logger.space('Creating new space', {
+      owner: req.user.userId,
+      spaceName: req.body.name,
+      spaceType: req.body.spaceType,
+    })
+
     // Upload images if they exist
     let images = []
     if (req.files && req.files.length > 0) {
+      logger.space('Uploading images', { imageCount: req.files.length })
       images = await uploadImagesToCloudinary(req.files)
+      logger.space('Images uploaded successfully', { uploadedCount: images.length })
     }
 
     // Attach image data to space
@@ -35,28 +44,71 @@ export const createSpace = async (req, res, next) => {
       delete spaceData.location.coordinates
     }
 
-    // Handle spaceType - if it's a string, try to find the corresponding SpaceType
+    // Handle spaceType - if it's a string ID, validate it exists
     if (spaceData.spaceType && typeof spaceData.spaceType === 'string') {
-      const spaceType = await SpaceType.findOne({
-        name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
-        isActive: true,
-      })
+      logger.space('Processing spaceType', { spaceType: spaceData.spaceType })
 
-      if (spaceType) {
-        spaceData.spaceType = spaceType._id
-        spaceData.spaceTypeName = spaceType.name
+      // Check if it's a valid ObjectId
+      if (mongoose.Types.ObjectId.isValid(spaceData.spaceType)) {
+        logger.space('Validating spaceType by ID', { spaceTypeId: spaceData.spaceType })
+        const spaceType = await SpaceType.findById(spaceData.spaceType)
+
+        if (spaceType && spaceType.isActive) {
+          spaceData.spaceTypeName = spaceType.name
+          logger.space('SpaceType validated successfully', {
+            spaceTypeId: spaceType._id,
+            spaceTypeName: spaceType.name,
+          })
+        } else {
+          logger.error('Invalid or inactive space type', {
+            spaceTypeId: spaceData.spaceType,
+            found: !!spaceType,
+            isActive: spaceType?.isActive,
+          })
+          throw new BadRequestError('Invalid or inactive space type')
+        }
       } else {
-        // If space type not found, create a new one or use a default
-        spaceData.spaceTypeName = spaceData.spaceType
-        delete spaceData.spaceType // Will cause validation error, but that's better than invalid reference
+        // If it's not a valid ObjectId, treat it as a name and try to find by name
+        logger.space('Looking up spaceType by name', { spaceTypeName: spaceData.spaceType })
+        const spaceType = await SpaceType.findOne({
+          name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
+          isActive: true,
+        })
+
+        if (spaceType) {
+          spaceData.spaceType = spaceType._id
+          spaceData.spaceTypeName = spaceType.name
+          logger.space('SpaceType found by name', {
+            spaceTypeId: spaceType._id,
+            spaceTypeName: spaceType.name,
+          })
+        } else {
+          logger.error('Space type not found by name', { spaceTypeName: spaceData.spaceType })
+          throw new BadRequestError('Space type not found')
+        }
       }
+    } else {
+      logger.error('Missing or invalid spaceType', { spaceType: spaceData.spaceType })
+      throw new BadRequestError('Please provide a space type')
     }
 
     const space = await Space.create(spaceData)
 
+    logger.success('Space created successfully', {
+      spaceId: space._id,
+      spaceName: space.name,
+      spaceType: space.spaceTypeName,
+      owner: space.owner,
+    })
+
     res.status(StatusCodes.CREATED).json({ space })
   } catch (error) {
-    console.error(error)
+    logger.error('Failed to create space', {
+      error: error.message,
+      spaceName: req.body.name,
+      spaceType: req.body.spaceType,
+      owner: req.user?.userId,
+    })
     next(error)
   }
 }

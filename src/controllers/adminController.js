@@ -1,10 +1,10 @@
 import { StatusCodes } from 'http-status-codes'
 
 import { BadRequestError, NotFoundError } from '../errors/index.js'
+import Amenity from '../models/Amenity.js'
 import Booking from '../models/Booking.js'
 import LocationRef from '../models/LocationRef.js'
 import Space from '../models/Space.js'
-import Taxonomy from '../models/Taxonomy.js'
 import User from '../models/User.js'
 
 // Dashboard Overview
@@ -552,28 +552,28 @@ export const deleteLocation = async (req, res, next) => {
   }
 }
 
-// Taxonomies Management
-export const getAllTaxonomies = async (req, res, next) => {
+// Amenities Management
+export const getAllAmenities = async (req, res, next) => {
   try {
-    const { type, search, page = 1, limit = 50 } = req.query
+    const { search, isActive, page = 1, limit = 50 } = req.query
     const query = {}
 
-    if (type) query.type = type
+    if (isActive !== undefined) query.isActive = isActive === 'true'
     if (search) {
       query.$or = [
-        { key: { $regex: search, $options: 'i' } },
-        { label: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
       ]
     }
 
     const skip = (page - 1) * limit
-    const [taxonomies, total] = await Promise.all([
-      Taxonomy.find(query).skip(skip).limit(Number(limit)).sort({ sortOrder: 1, label: 1 }),
-      Taxonomy.countDocuments(query),
+    const [amenities, total] = await Promise.all([
+      Amenity.find(query).skip(skip).limit(Number(limit)).sort({ sortOrder: 1, name: 1 }),
+      Amenity.countDocuments(query),
     ])
 
     res.status(StatusCodes.OK).json({
-      taxonomies,
+      amenities,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -586,100 +586,100 @@ export const getAllTaxonomies = async (req, res, next) => {
   }
 }
 
-export const createTaxonomy = async (req, res, next) => {
+export const createAmenity = async (req, res, next) => {
   try {
-    const { type, key, label, sortOrder = 0 } = req.body
+    const { name, description, icon, sortOrder = 0 } = req.body
 
-    if (!type || !key || !label) {
-      throw new BadRequestError('Type, key, and label are required')
+    if (!name || !icon) {
+      throw new BadRequestError('Name and icon are required')
     }
 
-    const existingTaxonomy = await Taxonomy.findOne({ key })
-    if (existingTaxonomy) {
-      throw new BadRequestError('Taxonomy with this key already exists')
+    const existingAmenity = await Amenity.findOne({ name })
+    if (existingAmenity) {
+      throw new BadRequestError('Amenity with this name already exists')
     }
 
-    const taxonomy = await Taxonomy.create({
-      type,
-      key,
-      label,
+    const amenity = await Amenity.create({
+      name,
+      description,
+      icon,
       sortOrder,
     })
 
     res.status(StatusCodes.CREATED).json({
-      taxonomy,
+      amenity,
     })
   } catch (err) {
     next(err)
   }
 }
 
-export const updateTaxonomy = async (req, res, next) => {
+export const updateAmenity = async (req, res, next) => {
   try {
     const { id } = req.params
     const updateData = req.body
 
-    const taxonomy = await Taxonomy.findByIdAndUpdate(id, updateData, {
+    const amenity = await Amenity.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     })
 
-    if (!taxonomy) {
-      throw new NotFoundError('Taxonomy not found')
+    if (!amenity) {
+      throw new NotFoundError('Amenity not found')
     }
 
     res.status(StatusCodes.OK).json({
-      taxonomy,
+      amenity,
     })
   } catch (err) {
     next(err)
   }
 }
 
-export const deleteTaxonomy = async (req, res, next) => {
+export const deleteAmenity = async (req, res, next) => {
   try {
     const { id } = req.params
 
-    const taxonomy = await Taxonomy.findById(id)
-    if (!taxonomy) {
-      throw new NotFoundError('Taxonomy not found')
+    const amenity = await Amenity.findById(id)
+    if (!amenity) {
+      throw new NotFoundError('Amenity not found')
     }
 
-    // Check if taxonomy is used in spaces
+    // Check if amenity is used in spaces
     const usedInSpaces = await Space.exists({
-      $or: [{ spaceType: taxonomy.key }, { amenities: taxonomy.key }],
+      amenities: { $in: [amenity.name] },
     })
 
     if (usedInSpaces) {
-      throw new BadRequestError('Cannot delete taxonomy that is used in spaces')
+      throw new BadRequestError('Cannot delete amenity that is used in spaces')
     }
 
-    await Taxonomy.findByIdAndDelete(id)
+    await Amenity.findByIdAndDelete(id)
 
     res.status(StatusCodes.OK).json({
-      message: 'Taxonomy deleted successfully',
+      message: 'Amenity deleted successfully',
     })
   } catch (err) {
     next(err)
   }
 }
 
-export const reorderTaxonomies = async (req, res, next) => {
+export const reorderAmenities = async (req, res, next) => {
   try {
-    const { taxonomies } = req.body
+    const { amenities } = req.body
 
-    if (!Array.isArray(taxonomies)) {
-      throw new BadRequestError('Taxonomies must be an array')
+    if (!Array.isArray(amenities)) {
+      throw new BadRequestError('Amenities must be an array')
     }
 
-    const updatePromises = taxonomies.map(({ id, sortOrder }) =>
-      Taxonomy.findByIdAndUpdate(id, { sortOrder }, { new: true })
+    const updatePromises = amenities.map(({ id, sortOrder }) =>
+      Amenity.findByIdAndUpdate(id, { sortOrder }, { new: true })
     )
 
-    const updatedTaxonomies = await Promise.all(updatePromises)
+    const updatedAmenities = await Promise.all(updatePromises)
 
     res.status(StatusCodes.OK).json({
-      taxonomies: updatedTaxonomies,
+      amenities: updatedAmenities,
     })
   } catch (err) {
     next(err)
