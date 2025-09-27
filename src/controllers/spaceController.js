@@ -35,20 +35,29 @@ export const createSpace = async (req, res, next) => {
       delete spaceData.location.coordinates
     }
 
-    // Handle spaceType - if it's a string, try to find the corresponding SpaceType
+    // Handle spaceType - if it's a string ID, validate it exists
     if (spaceData.spaceType && typeof spaceData.spaceType === 'string') {
-      const spaceType = await SpaceType.findOne({
-        name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
-        isActive: true,
-      })
-
-      if (spaceType) {
-        spaceData.spaceType = spaceType._id
-        spaceData.spaceTypeName = spaceType.name
+      // Check if it's a valid ObjectId
+      if (mongoose.Types.ObjectId.isValid(spaceData.spaceType)) {
+        const spaceType = await SpaceType.findById(spaceData.spaceType)
+        if (spaceType && spaceType.isActive) {
+          spaceData.spaceTypeName = spaceType.name
+        } else {
+          throw new BadRequestError('Invalid or inactive space type')
+        }
       } else {
-        // If space type not found, create a new one or use a default
-        spaceData.spaceTypeName = spaceData.spaceType
-        delete spaceData.spaceType // Will cause validation error, but that's better than invalid reference
+        // If it's not a valid ObjectId, treat it as a name and try to find by name
+        const spaceType = await SpaceType.findOne({
+          name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
+          isActive: true,
+        })
+
+        if (spaceType) {
+          spaceData.spaceType = spaceType._id
+          spaceData.spaceTypeName = spaceType.name
+        } else {
+          throw new BadRequestError('Space type not found')
+        }
       }
     }
 
