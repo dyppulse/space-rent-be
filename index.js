@@ -15,6 +15,7 @@ import bookingRoutes from './src/routes/bookings.js'
 import locationRoutes from './src/routes/locations.js'
 import spaceRoutes from './src/routes/spaces.js'
 import spaceTypeRoutes from './src/routes/spaceTypes.js'
+import logger from './src/utils/logger.js'
 
 // Load environment variables
 dotenv.config({
@@ -80,13 +81,14 @@ const PORT = process.env.PORT || 4000
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
-    console.log('Connected to MongoDB')
+    logger.success('Connected to MongoDB')
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`)
+      logger.success(`Server running on port ${PORT}`)
+      logger.info('API Documentation available at /api-docs')
     })
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error)
+    logger.error('MongoDB connection error', { error: error.message })
     process.exit(1)
   })
 

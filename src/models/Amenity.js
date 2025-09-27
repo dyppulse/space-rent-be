@@ -40,8 +40,7 @@ const amenitySchema = new mongoose.Schema(
   }
 )
 
-// Index for efficient queries
-amenitySchema.index({ name: 1 })
+// Index for efficient queries (name index is already created by unique: true)
 amenitySchema.index({ isActive: 1, sortOrder: 1 })
 
 const Amenity = mongoose.model('Amenity', amenitySchema)
