@@ -44,18 +44,61 @@ export const createSpace = async (req, res, next) => {
       delete spaceData.location.coordinates
     }
 
-    // Handle spaceType - if it's a string ID, validate it exists
-    if (spaceData.spaceType && typeof spaceData.spaceType === 'string') {
-      logger.space('Processing spaceType', { spaceType: spaceData.spaceType })
+    // Handle spaceTypes - support both single and multiple space types
+    if (
+      spaceData.spaceTypes &&
+      Array.isArray(spaceData.spaceTypes) &&
+      spaceData.spaceTypes.length > 0
+    ) {
+      logger.space('Processing multiple space types', { spaceTypes: spaceData.spaceTypes })
 
-      // Check if it's a valid ObjectId
+      const validatedSpaceTypes = []
+      const spaceTypeNames = []
+
+      for (const spaceTypeId of spaceData.spaceTypes) {
+        if (mongoose.Types.ObjectId.isValid(spaceTypeId)) {
+          const spaceType = await SpaceType.findById(spaceTypeId)
+
+          if (spaceType && spaceType.isActive) {
+            validatedSpaceTypes.push(spaceType._id)
+            spaceTypeNames.push(spaceType.name)
+            logger.space('SpaceType validated', {
+              spaceTypeId: spaceType._id,
+              spaceTypeName: spaceType.name,
+            })
+          } else {
+            logger.error('Invalid or inactive space type', {
+              spaceTypeId,
+              found: !!spaceType,
+              isActive: spaceType?.isActive,
+            })
+            throw new BadRequestError(`Invalid or inactive space type: ${spaceTypeId}`)
+          }
+        } else {
+          logger.error('Invalid space type ID format', { spaceTypeId })
+          throw new BadRequestError(`Invalid space type ID format: ${spaceTypeId}`)
+        }
+      }
+
+      spaceData.spaceTypes = validatedSpaceTypes
+      spaceData.spaceTypeName = spaceTypeNames.join(', ') // For backward compatibility
+      spaceData.spaceType = validatedSpaceTypes[0] // Set first as primary for backward compatibility
+
+      logger.space('All space types validated successfully', {
+        spaceTypeIds: validatedSpaceTypes,
+        spaceTypeNames,
+      })
+    } else if (spaceData.spaceType && typeof spaceData.spaceType === 'string') {
+      // Handle legacy single space type
+      logger.space('Processing single spaceType (legacy)', { spaceType: spaceData.spaceType })
+
       if (mongoose.Types.ObjectId.isValid(spaceData.spaceType)) {
-        logger.space('Validating spaceType by ID', { spaceTypeId: spaceData.spaceType })
         const spaceType = await SpaceType.findById(spaceData.spaceType)
 
         if (spaceType && spaceType.isActive) {
+          spaceData.spaceTypes = [spaceType._id]
           spaceData.spaceTypeName = spaceType.name
-          logger.space('SpaceType validated successfully', {
+          logger.space('Legacy spaceType validated successfully', {
             spaceTypeId: spaceType._id,
             spaceTypeName: spaceType.name,
           })
@@ -68,28 +111,15 @@ export const createSpace = async (req, res, next) => {
           throw new BadRequestError('Invalid or inactive space type')
         }
       } else {
-        // If it's not a valid ObjectId, treat it as a name and try to find by name
-        logger.space('Looking up spaceType by name', { spaceTypeName: spaceData.spaceType })
-        const spaceType = await SpaceType.findOne({
-          name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
-          isActive: true,
-        })
-
-        if (spaceType) {
-          spaceData.spaceType = spaceType._id
-          spaceData.spaceTypeName = spaceType.name
-          logger.space('SpaceType found by name', {
-            spaceTypeId: spaceType._id,
-            spaceTypeName: spaceType.name,
-          })
-        } else {
-          logger.error('Space type not found by name', { spaceTypeName: spaceData.spaceType })
-          throw new BadRequestError('Space type not found')
-        }
+        logger.error('Invalid space type ID format', { spaceType: spaceData.spaceType })
+        throw new BadRequestError('Invalid space type ID format')
       }
     } else {
-      logger.error('Missing or invalid spaceType', { spaceType: spaceData.spaceType })
-      throw new BadRequestError('Please provide a space type')
+      logger.error('Missing or invalid space types', {
+        spaceTypes: spaceData.spaceTypes,
+        spaceType: spaceData.spaceType,
+      })
+      throw new BadRequestError('Please provide at least one space type')
     }
 
     const space = await Space.create(spaceData)
@@ -287,10 +317,9 @@ export const getSpace = async (req, res, next) => {
       })
     }
 
-    const space = await Space.findOne({ _id: spaceId, isActive: true }).populate(
-      'spaceType',
-      'name description icon'
-    )
+    const space = await Space.findOne({ _id: spaceId, isActive: true })
+      .populate('spaceType', 'name description icon')
+      .populate('spaceTypes', 'name description icon')
 
     if (!space) {
       const error = new NotFoundError(`No space found with id ${spaceId}`)

@@ -123,12 +123,19 @@ const spaceSchema = new mongoose.Schema(
     capacity: {
       type: Number,
     },
+    // Multiple space types support
+    spaceTypes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SpaceType',
+      },
+    ],
+    // Legacy field for backward compatibility
     spaceType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'SpaceType',
-      required: [true, 'Please provide a space type'],
+      required: false, // Made optional since we now use spaceTypes array
     },
-    // Legacy field for backward compatibility
     spaceTypeName: {
       type: String,
       required: false,
