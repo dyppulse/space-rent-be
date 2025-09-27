@@ -20,11 +20,41 @@ router.get('/', getAllSpaces)
 
 router.get('/:id', getSpace)
 
-router.post('/', authenticateUser, upload.array('images', 10), createSpace)
+router.post(
+  '/',
+  authenticateUser,
+  (req, res, next) => {
+    upload.array('images', 10)(req, res, (err) => {
+      if (err) {
+        console.error('Multer error:', err)
+        return res.status(400).json({
+          error: err.message || 'File upload error',
+        })
+      }
+      next()
+    })
+  },
+  createSpace
+)
 
 router.get('/owner/my-spaces', authenticateUser, getMySpaces)
 
-router.patch('/:id', authenticateUser, upload.array('newImages', 10), updateSpace)
+router.patch(
+  '/:id',
+  authenticateUser,
+  (req, res, next) => {
+    upload.array('newImages', 10)(req, res, (err) => {
+      if (err) {
+        console.error('Multer error:', err)
+        return res.status(400).json({
+          error: err.message || 'File upload error',
+        })
+      }
+      next()
+    })
+  },
+  updateSpace
+)
 
 router.delete('/:id', authenticateUser, deleteSpace)
 

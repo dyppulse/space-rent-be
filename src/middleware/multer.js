@@ -9,10 +9,23 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase()
-  if (ext === '.jpg' || ext === '.jpeg' || ext === '.png') {
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp', '.tiff']
+
+  // Check if it's an image file by extension
+  if (allowedExtensions.includes(ext)) {
     cb(null, true)
   } else {
-    cb(new Error('Only images are allowed'))
+    // Also check MIME type as a fallback
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      // Create a more descriptive error
+      const error = new Error(
+        `Only image files are allowed. Received: ${file.originalname} (${file.mimetype})`
+      )
+      error.code = 'INVALID_FILE_TYPE'
+      cb(error)
+    }
   }
 }
 

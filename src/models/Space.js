@@ -80,12 +80,11 @@ const spaceSchema = new mongoose.Schema(
         type: {
           type: String,
           enum: ['Point'],
-          default: 'Point',
+          required: false,
         },
         coordinates: {
           type: [Number], // [lng, lat]
-          index: '2dsphere',
-          default: undefined,
+          required: false,
         },
       },
       // Legacy fields kept for backward compatibility (non-required)
@@ -185,6 +184,25 @@ spaceSchema.index({
 
 // Geospatial index for near queries
 spaceSchema.index({ 'location.point': '2dsphere' })
+
+// Pre-save middleware to handle geospatial point validation
+spaceSchema.pre('save', function (next) {
+  // Only create point if coordinates are provided
+  if (
+    this.location &&
+    this.location.point &&
+    this.location.point.coordinates &&
+    this.location.point.coordinates.length === 2
+  ) {
+    // Ensure the point has the correct structure
+    this.location.point.type = 'Point'
+    // coordinates should be [longitude, latitude]
+  } else if (this.location && this.location.point) {
+    // If point exists but no valid coordinates, remove it
+    delete this.location.point
+  }
+  next()
+})
 
 const Space = mongoose.model('Space', spaceSchema)
 

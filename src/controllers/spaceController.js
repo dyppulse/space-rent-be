@@ -19,8 +19,22 @@ export const createSpace = async (req, res, next) => {
     }
 
     // Attach image data to space
+    const spaceData = { ...req.body, owner: req.user.userId, images }
 
-    const space = await Space.create({ ...req.body, owner: req.user.userId, images })
+    // Handle geospatial point - if coordinates are provided, create a proper Point
+    if (spaceData.location && spaceData.location.coordinates) {
+      const { lat, lng } = spaceData.location.coordinates
+      if (lat && lng) {
+        spaceData.location.point = {
+          type: 'Point',
+          coordinates: [lng, lat], // MongoDB expects [longitude, latitude]
+        }
+      }
+      // Remove the legacy coordinates field
+      delete spaceData.location.coordinates
+    }
+
+    const space = await Space.create(spaceData)
 
     res.status(StatusCodes.CREATED).json({ space })
   } catch (error) {
@@ -271,11 +285,25 @@ export const updateSpace = async (req, res, next) => {
       })
     }
 
+    // Handle geospatial point for updates
+    const updateData = { ...req.body }
+    if (updateData.location && updateData.location.coordinates) {
+      const { lat, lng } = updateData.location.coordinates
+      if (lat && lng) {
+        updateData.location.point = {
+          type: 'Point',
+          coordinates: [lng, lat], // MongoDB expects [longitude, latitude]
+        }
+      }
+      // Remove the legacy coordinates field
+      delete updateData.location.coordinates
+    }
+
     // Merge image additions
     const updatedSpace = await Space.findByIdAndUpdate(
       spaceId,
       {
-        ...req.body,
+        ...updateData,
         $push: { images: { $each: uploadedImages } },
       },
       {
