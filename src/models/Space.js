@@ -124,9 +124,15 @@ const spaceSchema = new mongoose.Schema(
       type: Number,
     },
     spaceType: {
-      type: String,
-      // enum: ['event venue', 'wedding location', 'studio', 'conference room', 'other'],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SpaceType',
       required: [true, 'Please provide a space type'],
+    },
+    // Legacy field for backward compatibility
+    spaceTypeName: {
+      type: String,
+      required: false,
+      trim: true,
     },
     amenities: {
       type: [String],

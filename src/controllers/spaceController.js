@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Space from '../models/Space.js'
+import SpaceType from '../models/SpaceType.js'
 import {
   uploadImagesToCloudinary,
   deleteFromCloudinary,
@@ -32,6 +33,23 @@ export const createSpace = async (req, res, next) => {
       }
       // Remove the legacy coordinates field
       delete spaceData.location.coordinates
+    }
+
+    // Handle spaceType - if it's a string, try to find the corresponding SpaceType
+    if (spaceData.spaceType && typeof spaceData.spaceType === 'string') {
+      const spaceType = await SpaceType.findOne({
+        name: { $regex: new RegExp(`^${spaceData.spaceType}$`, 'i') },
+        isActive: true,
+      })
+
+      if (spaceType) {
+        spaceData.spaceType = spaceType._id
+        spaceData.spaceTypeName = spaceType.name
+      } else {
+        // If space type not found, create a new one or use a default
+        spaceData.spaceTypeName = spaceData.spaceType
+        delete spaceData.spaceType // Will cause validation error, but that's better than invalid reference
+      }
     }
 
     const space = await Space.create(spaceData)
@@ -183,7 +201,11 @@ export const getAllSpaces = async (req, res, next) => {
       }
     }
 
-    const spaces = await Space.find(queryObject).sort(sortOptions).skip(skip).limit(limit)
+    const spaces = await Space.find(queryObject)
+      .populate('spaceType', 'name description icon')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
 
     const totalSpaces = await Space.countDocuments(queryObject)
     const numOfPages = Math.ceil(totalSpaces / limit)
@@ -213,7 +235,10 @@ export const getSpace = async (req, res, next) => {
       })
     }
 
-    const space = await Space.findOne({ _id: spaceId, isActive: true })
+    const space = await Space.findOne({ _id: spaceId, isActive: true }).populate(
+      'spaceType',
+      'name description icon'
+    )
 
     if (!space) {
       const error = new NotFoundError(`No space found with id ${spaceId}`)
@@ -233,7 +258,9 @@ export const getSpace = async (req, res, next) => {
 // Get spaces owned by the current user
 export const getMySpaces = async (req, res, next) => {
   try {
-    const spaces = await Space.find({ owner: req.user.userId }).sort('-createdAt')
+    const spaces = await Space.find({ owner: req.user.userId })
+      .populate('spaceType', 'name description icon')
+      .sort('-createdAt')
 
     res.status(StatusCodes.OK).json({
       spaces,
