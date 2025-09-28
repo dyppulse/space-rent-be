@@ -12,7 +12,9 @@ import { errorHandler } from './src/middleware/errorHandler.js'
 import adminRoutes from './src/routes/admin.js'
 import authRoutes from './src/routes/auth.js'
 import bookingRoutes from './src/routes/bookings.js'
+import featureFlagRoutes from './src/routes/featureFlags.js'
 import locationRoutes from './src/routes/locations.js'
+import paymentRoutes from './src/routes/payments.js'
 import spaceRoutes from './src/routes/spaces.js'
 import spaceTypeRoutes from './src/routes/spaceTypes.js'
 import logger from './src/utils/logger.js'
@@ -66,6 +68,8 @@ app.use('/api/space-types', spaceTypeRoutes)
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/locations', locationRoutes)
+app.use('/api/feature-flags', featureFlagRoutes)
+app.use('/api/payments', paymentRoutes)
 
 // Health check route
 app.get('/health', (req, res) => {

@@ -27,6 +27,12 @@ const bookingSchema = new mongoose.Schema(
       required: [true, 'Client phone is required'],
       trim: true,
     },
+    bookingType: {
+      type: String,
+      enum: ['single', 'multi'],
+      required: [true, 'Booking type is required'],
+      default: 'single',
+    },
     eventDate: {
       type: Date,
       required: [true, 'Event date is required'],
@@ -39,6 +45,18 @@ const bookingSchema = new mongoose.Schema(
       type: Date,
       required: [true, 'End time is required'],
     },
+    checkInDate: {
+      type: Date,
+      required: function () {
+        return this.bookingType === 'multi'
+      },
+    },
+    checkOutDate: {
+      type: Date,
+      required: function () {
+        return this.bookingType === 'multi'
+      },
+    },
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
@@ -47,6 +65,41 @@ const bookingSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: [true, 'Total price is required'],
+    },
+    attendees: {
+      type: Number,
+      default: 1,
+      min: [1, 'At least 1 attendee required'],
+    },
+    eventType: {
+      type: String,
+      trim: true,
+    },
+    specialRequests: {
+      type: String,
+      trim: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'mobile_money_mtn', 'mobile_money_airtel', 'card'],
+      default: 'cash',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'cancelled'],
+      default: 'pending',
+    },
+    paymentReference: {
+      type: String,
+      trim: true,
+    },
+    paymentTransactionId: {
+      type: String,
+      trim: true,
+    },
+    paymentProvider: {
+      type: String,
+      enum: ['MTN', 'Airtel', 'Card', 'Cash'],
     },
   },
   {
@@ -61,11 +114,17 @@ const bookingSchema = new mongoose.Schema(
   }
 )
 
-// Ensure end time is after start time
+// Ensure end time is after start time for single day bookings
 bookingSchema.pre('validate', function (next) {
-  if (this.startTime >= this.endTime) {
+  if (this.bookingType === 'single' && this.startTime >= this.endTime) {
     this.invalidate('endTime', 'End time must be after start time')
   }
+
+  // For multi-day bookings, ensure check-out is after check-in
+  if (this.bookingType === 'multi' && this.checkInDate >= this.checkOutDate) {
+    this.invalidate('checkOutDate', 'Check-out date must be after check-in date')
+  }
+
   next()
 })
 

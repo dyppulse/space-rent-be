@@ -13,25 +13,51 @@ export const createBooking = async (req, res, next) => {
     clientName,
     clientEmail,
     clientPhone,
+    bookingType,
     eventDate,
     startTime,
     endTime,
-    attendees,
+    checkInDate,
+    checkOutDate,
+    guests,
+    eventType,
     specialRequests,
+    paymentMethod,
   } = req.body
 
   try {
-    if (
-      !spaceId ||
-      !clientName ||
-      !clientEmail ||
-      !clientPhone ||
-      !eventDate ||
-      !startTime ||
-      !endTime
-    ) {
+    // Validate required fields based on booking type
+    if (!spaceId || !clientName || !clientEmail || !clientPhone) {
       const error = new BadRequestError('Please provide all required fields')
-      // Use the error object to construct the response
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      })
+    }
+
+    // Validate booking type specific fields
+    if (bookingType === 'single') {
+      if (!eventDate || !startTime || !endTime) {
+        const error = new BadRequestError(
+          'Please provide event date, start time, and end time for single day booking'
+        )
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
+    } else if (bookingType === 'multi') {
+      if (!checkInDate || !checkOutDate) {
+        const error = new BadRequestError(
+          'Please provide check-in and check-out dates for multi-day booking'
+        )
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
+    } else {
+      const error = new BadRequestError('Please specify booking type (single or multi)')
       return res.status(error.statusCode).json({
         success: false,
         message: error.message,
@@ -72,36 +98,66 @@ export const createBooking = async (req, res, next) => {
       })
     }
 
-    // Calculate total price based on duration and space price
-    const start = new Date(startTime)
-    const end = new Date(endTime)
-    const durationHours = (end - start) / (1000 * 60 * 60)
-
+    // Calculate total price based on booking type
     let totalPrice
-    if (space.price.unit === 'hour') {
-      totalPrice = space.price.amount * durationHours
-    } else if (space.price.unit === 'day') {
-      const durationDays = Math.ceil(durationHours / 24)
-      totalPrice = space.price.amount * durationDays
-    } else {
-      // For 'event' pricing, use the flat rate
-      totalPrice = space.price.amount
-    }
-
-    // Create the booking
-    const booking = await Booking.create({
+    let bookingData = {
       space: spaceId,
       clientName,
       clientEmail,
       clientPhone,
-      eventDate: new Date(eventDate),
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      attendees,
+      bookingType,
+      attendees: guests || 1,
+      eventType,
       specialRequests,
       totalPrice,
       status: 'pending',
-    })
+      paymentMethod: paymentMethod || 'cash',
+    }
+
+    if (bookingType === 'single') {
+      // Single day booking
+      const start = new Date(startTime)
+      const end = new Date(endTime)
+      const durationHours = (end - start) / (1000 * 60 * 60)
+
+      if (space.price.unit === 'hour') {
+        totalPrice = space.price.amount * durationHours
+      } else if (space.price.unit === 'day') {
+        const durationDays = Math.ceil(durationHours / 24)
+        totalPrice = space.price.amount * durationDays
+      } else {
+        totalPrice = space.price.amount
+      }
+
+      bookingData.eventDate = new Date(eventDate)
+      bookingData.startTime = new Date(startTime)
+      bookingData.endTime = new Date(endTime)
+    } else if (bookingType === 'multi') {
+      // Multi-day booking
+      const checkIn = new Date(checkInDate)
+      const checkOut = new Date(checkOutDate)
+      const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
+
+      if (space.price.unit === 'day') {
+        totalPrice = space.price.amount * nights
+      } else if (space.price.unit === 'hour') {
+        // For hourly spaces, charge for 24 hours per night
+        totalPrice = space.price.amount * 24 * nights
+      } else {
+        totalPrice = space.price.amount * nights
+      }
+
+      bookingData.checkInDate = checkIn
+      bookingData.checkOutDate = checkOut
+      bookingData.eventDate = checkIn // Use check-in as event date for compatibility
+      bookingData.startTime = checkIn
+      bookingData.endTime = checkOut
+    }
+
+    bookingData.totalPrice = totalPrice
+
+    // Create the booking
+    const booking = await Booking.create(bookingData)
 
     // Optional: Send confirmation email
     try {
