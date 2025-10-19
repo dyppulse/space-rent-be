@@ -37,10 +37,8 @@ export const createBooking = async (req, res, next) => {
 
     // Validate booking type specific fields
     if (bookingType === 'single') {
-      if (!eventDate || !startTime || !endTime) {
-        const error = new BadRequestError(
-          'Please provide event date, start time, and end time for single day booking'
-        )
+      if (!eventDate) {
+        const error = new BadRequestError('Please provide event date for single day booking')
         return res.status(error.statusCode).json({
           success: false,
           message: error.message,
@@ -77,25 +75,35 @@ export const createBooking = async (req, res, next) => {
     }
 
     // Check if the space is already booked for the requested time
-    const conflictingBooking = await Booking.findOne({
-      space: spaceId,
-      eventDate: new Date(eventDate),
-      $or: [
-        {
-          startTime: { $lt: new Date(endTime) },
-          endTime: { $gt: new Date(startTime) },
-        },
-      ],
-      status: { $ne: 'cancelled' },
-    })
+    // Only check for conflicts if we have an eventDate
+    if (eventDate && bookingType === 'single') {
+      const queryDate = new Date(eventDate)
+      const conflictQuery = {
+        space: spaceId,
+        eventDate: queryDate,
+        status: { $ne: 'cancelled' },
+      }
 
-    if (conflictingBooking) {
-      const error = new BadRequestError('The space is already booked for this time')
-      // Use the error object to construct the response
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-      })
+      // If we have start and end times, check for time overlap
+      // Otherwise, just check for same date (full day booking)
+      if (startTime && endTime) {
+        conflictQuery.$or = [
+          {
+            startTime: { $lt: new Date(endTime) },
+            endTime: { $gt: new Date(startTime) },
+          },
+        ]
+      }
+
+      const conflictingBooking = await Booking.findOne(conflictQuery)
+
+      if (conflictingBooking) {
+        const error = new BadRequestError('The space is already booked for this time')
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
     }
 
     // Calculate total price based on booking type
@@ -116,22 +124,45 @@ export const createBooking = async (req, res, next) => {
 
     if (bookingType === 'single') {
       // Single day booking
-      const start = new Date(startTime)
-      const end = new Date(endTime)
-      const durationHours = (end - start) / (1000 * 60 * 60)
+      bookingData.eventDate = new Date(eventDate)
 
       if (space.price.unit === 'hour') {
+        // For hourly pricing, start and end times are required
+        if (!startTime || !endTime) {
+          const error = new BadRequestError(
+            'Start time and end time are required for hourly priced spaces'
+          )
+          return res.status(error.statusCode).json({
+            success: false,
+            message: error.message,
+          })
+        }
+        const start = new Date(startTime)
+        const end = new Date(endTime)
+        const durationHours = (end - start) / (1000 * 60 * 60)
         totalPrice = space.price.amount * durationHours
+        bookingData.startTime = start
+        bookingData.endTime = end
       } else if (space.price.unit === 'day') {
-        const durationDays = Math.ceil(durationHours / 24)
-        totalPrice = space.price.amount * durationDays
-      } else {
+        // For daily pricing, use full day - start/end times are optional
         totalPrice = space.price.amount
+        // Set default times if not provided (full day: midnight to midnight)
+        const eventDateObj = new Date(eventDate)
+        bookingData.startTime = startTime
+          ? new Date(startTime)
+          : new Date(eventDateObj.setHours(0, 0, 0, 0))
+        const endDateObj = new Date(eventDate)
+        bookingData.endTime = endTime
+          ? new Date(endTime)
+          : new Date(endDateObj.setHours(23, 59, 59, 999))
+      } else {
+        // Event pricing
+        totalPrice = space.price.amount
+        if (startTime && endTime) {
+          bookingData.startTime = new Date(startTime)
+          bookingData.endTime = new Date(endTime)
+        }
       }
-
-      bookingData.eventDate = new Date(eventDate)
-      bookingData.startTime = new Date(startTime)
-      bookingData.endTime = new Date(endTime)
     } else if (bookingType === 'multi') {
       // Multi-day booking
       const checkIn = new Date(checkInDate)
