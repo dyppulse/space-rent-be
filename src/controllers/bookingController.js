@@ -81,7 +81,7 @@ export const createBooking = async (req, res, next) => {
       const conflictQuery = {
         space: spaceId,
         eventDate: queryDate,
-        status: { $ne: 'cancelled' },
+        status: { $nin: ['cancelled', 'declined'] },
       }
 
       // If we have start and end times, check for time overlap
@@ -230,7 +230,7 @@ export const getOwnerBookings = async (req, res, next) => {
     const queryObject = { space: { $in: spaceIds } }
 
     // Filter by status
-    if (status && ['pending', 'confirmed', 'cancelled'].includes(status)) {
+    if (status && ['pending', 'confirmed', 'declined', 'cancelled', 'completed'].includes(status)) {
       queryObject.status = status
     }
 
@@ -332,11 +332,11 @@ export const getBooking = async (req, res, next) => {
   }
 }
 
-// Update booking status (confirm or cancel)
+// Update booking status (confirm, decline, or cancel)
 export const updateBookingStatus = async (req, res, next) => {
   try {
     const { id: bookingId } = req.params
-    const { status } = req.body
+    const { status, reason } = req.body
 
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       const error = new BadRequestError('Invalid booking ID')
@@ -347,8 +347,10 @@ export const updateBookingStatus = async (req, res, next) => {
       })
     }
 
-    if (!status || !['confirmed', 'cancelled'].includes(status)) {
-      const error = new BadRequestError('Please provide a valid status (confirmed or cancelled)')
+    if (!status || !['confirmed', 'declined', 'cancelled', 'completed'].includes(status)) {
+      const error = new BadRequestError(
+        'Please provide a valid status (confirmed, declined, cancelled, or completed)'
+      )
       // Use the error object to construct the response
       return res.status(error.statusCode).json({
         success: false,
@@ -358,7 +360,7 @@ export const updateBookingStatus = async (req, res, next) => {
 
     const booking = await Booking.findById(bookingId).populate({
       path: 'space',
-      select: 'owner',
+      select: 'owner name',
     })
 
     if (!booking) {
@@ -380,8 +382,18 @@ export const updateBookingStatus = async (req, res, next) => {
       })
     }
 
+    // Update status and reason if provided
     booking.status = status
+    if (reason) {
+      booking.cancellationReason = reason
+    }
     await booking.save()
+
+    // Populate space details for the response
+    await booking.populate({
+      path: 'space',
+      select: 'name location images price',
+    })
 
     // Optional: Send status update email to client
     try {
@@ -407,7 +419,9 @@ export const getBookingStats = async (req, res, next) => {
         totalBookings: 0,
         pendingBookings: 0,
         confirmedBookings: 0,
+        declinedBookings: 0,
         cancelledBookings: 0,
+        completedBookings: 0,
         upcomingBookings: 0,
         totalRevenue: 0,
       })
@@ -416,13 +430,21 @@ export const getBookingStats = async (req, res, next) => {
     const spaceIds = userSpaces.map((space) => space._id)
 
     // Get counts by status
-    const [totalBookings, pendingBookings, confirmedBookings, cancelledBookings] =
-      await Promise.all([
-        Booking.countDocuments({ space: { $in: spaceIds } }),
-        Booking.countDocuments({ space: { $in: spaceIds }, status: 'pending' }),
-        Booking.countDocuments({ space: { $in: spaceIds }, status: 'confirmed' }),
-        Booking.countDocuments({ space: { $in: spaceIds }, status: 'cancelled' }),
-      ])
+    const [
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      declinedBookings,
+      cancelledBookings,
+      completedBookings,
+    ] = await Promise.all([
+      Booking.countDocuments({ space: { $in: spaceIds } }),
+      Booking.countDocuments({ space: { $in: spaceIds }, status: 'pending' }),
+      Booking.countDocuments({ space: { $in: spaceIds }, status: 'confirmed' }),
+      Booking.countDocuments({ space: { $in: spaceIds }, status: 'declined' }),
+      Booking.countDocuments({ space: { $in: spaceIds }, status: 'cancelled' }),
+      Booking.countDocuments({ space: { $in: spaceIds }, status: 'completed' }),
+    ])
 
     // Get upcoming bookings (future events that are confirmed)
     const upcomingBookings = await Booking.countDocuments({
@@ -431,12 +453,12 @@ export const getBookingStats = async (req, res, next) => {
       eventDate: { $gte: new Date() },
     })
 
-    // Calculate total revenue from confirmed bookings
+    // Calculate total revenue from confirmed and completed bookings
     const revenueResult = await Booking.aggregate([
       {
         $match: {
           space: { $in: spaceIds },
-          status: 'confirmed',
+          status: { $in: ['confirmed', 'completed'] },
         },
       },
       {
@@ -453,7 +475,9 @@ export const getBookingStats = async (req, res, next) => {
       totalBookings,
       pendingBookings,
       confirmedBookings,
+      declinedBookings,
       cancelledBookings,
+      completedBookings,
       upcomingBookings,
       totalRevenue,
     })
