@@ -174,29 +174,32 @@ export const getAllSpaces = async (req, res, next) => {
       const words = exactSearch.split(' ').filter((word) => word.length > 0)
 
       // Create an OR query for multiple searchable fields
+      // Note: Only search string fields to avoid errors with ObjectId fields
       queryObject.$or = [
         // Exact match (highest priority)
         { name: { $regex: `^${exactSearch}$`, $options: 'i' } },
-        { spaceType: { $regex: `^${exactSearch}$`, $options: 'i' } },
+        { spaceTypeName: { $regex: `^${exactSearch}$`, $options: 'i' } },
 
         // Contains the full search term
         { name: { $regex: exactSearch, $options: 'i' } },
-        { spaceType: { $regex: exactSearch, $options: 'i' } },
-        { 'location.district': { $regex: exactSearch, $options: 'i' } },
-        { 'location.county': { $regex: exactSearch, $options: 'i' } },
-        { 'location.subCounty': { $regex: exactSearch, $options: 'i' } },
-        { 'location.village': { $regex: exactSearch, $options: 'i' } },
+        { spaceTypeName: { $regex: exactSearch, $options: 'i' } },
+        { 'location.districtName': { $regex: exactSearch, $options: 'i' } },
+        { 'location.countyName': { $regex: exactSearch, $options: 'i' } },
+        { 'location.subCountyName': { $regex: exactSearch, $options: 'i' } },
+        { 'location.parishName': { $regex: exactSearch, $options: 'i' } },
+        { 'location.villageName': { $regex: exactSearch, $options: 'i' } },
         { 'location.city': { $regex: exactSearch, $options: 'i' } },
         { 'location.state': { $regex: exactSearch, $options: 'i' } },
         { 'location.address': { $regex: exactSearch, $options: 'i' } },
         { description: { $regex: exactSearch, $options: 'i' } },
-        { amenities: { $regex: exactSearch, $options: 'i' } },
 
-        // Partial word matches (for multi-word searches like "Miranda Keller")
+        // Partial word matches (for multi-word searches)
         ...words.map((word) => ({ name: { $regex: word, $options: 'i' } })),
-        ...words.map((word) => ({ spaceType: { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ spaceTypeName: { $regex: word, $options: 'i' } })),
         ...words.map((word) => ({ 'location.city': { $regex: word, $options: 'i' } })),
-        ...words.map((word) => ({ 'location.district': { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ 'location.districtName': { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ 'location.countyName': { $regex: word, $options: 'i' } })),
+        ...words.map((word) => ({ 'location.subCountyName': { $regex: word, $options: 'i' } })),
       ]
     }
 
