@@ -256,6 +256,10 @@ export const getCurrentUser = async (req, res) => {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      roles: user.roles,
+      activeRole: user.activeRole,
+      emailVerified: user.emailVerified,
+      isVerified: user.isVerified,
     },
   })
 }
@@ -404,10 +408,8 @@ export const switchRole = async (req, res, next) => {
       throw new BadRequestError(`You don't have permission to switch to ${role} role`)
     }
 
-    // If switching to owner, check if verified
-    if (role === 'owner' && !user.isVerified) {
-      throw new BadRequestError('Owner verification pending. You cannot switch to owner view yet.')
-    }
+    // Allow switching to owner even if not verified
+    // The frontend will show a pending verification state
 
     user.activeRole = role
     user.role = role // For backward compatibility
