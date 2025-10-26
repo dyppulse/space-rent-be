@@ -23,6 +23,12 @@ import {
   updateAmenity,
   deleteAmenity,
   reorderAmenities,
+  getPendingVerifications,
+  approveOwnerVerification,
+  rejectOwnerVerification,
+  getPendingUpgradeRequests,
+  approveUpgradeRequest,
+  rejectUpgradeRequest,
 } from '../controllers/adminController.js'
 import { authenticateUser, authorizeRoles } from '../middleware/auth.js'
 
@@ -85,5 +91,49 @@ router
   .delete(authenticateUser, authorizeRoles('superadmin'), deleteAmenity)
 
 router.patch('/amenities/reorder', authenticateUser, authorizeRoles('superadmin'), reorderAmenities)
+
+// Owner Verification Management
+router.get(
+  '/verifications/pending',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  getPendingVerifications
+)
+
+router.post(
+  '/verifications/:userId/approve',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  approveOwnerVerification
+)
+
+router.post(
+  '/verifications/:userId/reject',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  rejectOwnerVerification
+)
+
+// Upgrade Request Management
+router.get(
+  '/upgrade-requests/pending',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  getPendingUpgradeRequests
+)
+
+router.post(
+  '/upgrade-requests/:userId/approve',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  approveUpgradeRequest
+)
+
+router.post(
+  '/upgrade-requests/:userId/reject',
+  authenticateUser,
+  authorizeRoles('superadmin'),
+  rejectUpgradeRequest
+)
 
 export default router

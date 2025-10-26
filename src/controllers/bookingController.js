@@ -187,6 +187,9 @@ export const createBooking = async (req, res, next) => {
 
     bookingData.totalPrice = totalPrice
 
+    // Add user to booking data
+    bookingData.user = req.user.userId
+
     // Create the booking
     const booking = await Booking.create(bookingData)
 
@@ -207,6 +210,75 @@ export const createBooking = async (req, res, next) => {
     }
 
     res.status(StatusCodes.CREATED).json({ booking })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Get all bookings for a regular user (client)
+export const getUserBookings = async (req, res, next) => {
+  try {
+    const userId = req.user.userId
+
+    // Query parameters
+    const { status, startDate, endDate, sort } = req.query
+
+    const queryObject = { user: userId }
+
+    // Filter by status
+    if (status && ['pending', 'confirmed', 'declined', 'cancelled', 'completed'].includes(status)) {
+      queryObject.status = status
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      queryObject.eventDate = {}
+
+      if (startDate) {
+        queryObject.eventDate.$gte = new Date(startDate)
+      }
+
+      if (endDate) {
+        if (queryObject.eventDate.$gte) {
+          queryObject.eventDate.$lte = new Date(endDate)
+        } else {
+          queryObject.eventDate = { $lte: new Date(endDate) }
+        }
+      }
+    }
+
+    // Sorting
+    let sortOptions = { eventDate: 1 } // Default sort by event date (ascending)
+
+    if (sort === 'latest') {
+      sortOptions = { createdAt: -1 }
+    } else if (sort === 'oldest') {
+      sortOptions = { createdAt: 1 }
+    }
+
+    // Pagination
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 10
+    const skip = (page - 1) * limit
+
+    const bookings = await Booking.find(queryObject)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: 'space',
+        select: 'name location images price owner',
+      })
+
+    const totalBookings = await Booking.countDocuments(queryObject)
+    const numOfPages = Math.ceil(totalBookings / limit)
+
+    res.status(StatusCodes.OK).json({
+      bookings,
+      totalBookings,
+      numOfPages,
+      currentPage: page,
+    })
   } catch (err) {
     next(err)
   }
