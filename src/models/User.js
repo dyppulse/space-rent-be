@@ -33,8 +33,84 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['owner', 'superadmin'],
-      default: 'owner',
+      enum: ['owner', 'client', 'superadmin'],
+      default: 'client',
+    },
+    // Multiple roles support
+    roles: {
+      type: [String],
+      enum: ['client', 'owner', 'superadmin'],
+      default: ['client'],
+    },
+    activeRole: {
+      type: String,
+      enum: ['client', 'owner'],
+      default: 'client',
+    },
+    // Verification flags
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    // Owner-specific verification
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationInfo: {
+      nationalId: String,
+      businessName: String,
+      businessRegistrationNumber: String,
+      businessLocation: String,
+      propertyAddress: String,
+      propertyType: {
+        type: String,
+        enum: ['owned', 'leased', 'other'],
+      },
+      contactPersonName: String,
+      contactPersonPhone: String,
+      documents: {
+        businessLicense: String, // URL to uploaded document
+        nationalId: String,
+        proofOfOwnership: String,
+        otherDocuments: [String],
+      },
+      submittedAt: Date,
+    },
+    // Client to Owner upgrade request
+    upgradeRequest: {
+      status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+      },
+      submittedAt: Date,
+      reviewedAt: Date,
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      rejectionReason: String,
+      verificationInfo: {
+        nationalId: String,
+        businessName: String,
+        businessRegistrationNumber: String,
+        businessLocation: String,
+        propertyAddress: String,
+        propertyType: {
+          type: String,
+          enum: ['owned', 'leased', 'other'],
+        },
+        contactPersonName: String,
+        contactPersonPhone: String,
+        documents: {
+          businessLicense: String,
+          nationalId: String,
+          proofOfOwnership: String,
+          otherDocuments: [String],
+        },
+      },
     },
   },
   { timestamps: true }
@@ -46,6 +122,29 @@ userSchema.pre('save', async function (next) {
 
   const salt = await bcrypt.genSalt(10)
   this.password = await bcrypt.hash(this.password, salt)
+  next()
+})
+
+// Sync roles array with role field
+userSchema.pre('save', function (next) {
+  // If this is a new document and roles array is empty, set it based on role
+  if (this.isNew && (!this.roles || this.roles.length === 0)) {
+    if (this.role === 'owner') {
+      this.roles = ['client', 'owner']
+      this.activeRole = 'owner'
+    } else if (this.role === 'client') {
+      this.roles = ['client']
+      this.activeRole = 'client'
+    } else {
+      this.roles = [this.role]
+    }
+  }
+
+  // Sync role field with activeRole for backward compatibility
+  if (this.activeRole && this.activeRole !== this.role) {
+    this.role = this.activeRole
+  }
+
   next()
 })
 

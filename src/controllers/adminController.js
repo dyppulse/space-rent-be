@@ -6,6 +6,12 @@ import Booking from '../models/Booking.js'
 import LocationRef from '../models/LocationRef.js'
 import Space from '../models/Space.js'
 import User from '../models/User.js'
+import {
+  sendOwnerVerificationApprovedEmail,
+  sendOwnerVerificationRejectedEmail,
+  sendUpgradeRequestApprovedEmail,
+  sendUpgradeRequestRejectedEmail,
+} from '../utils/emailService.js'
 
 // Dashboard Overview
 export const getDashboardStats = async (req, res, next) => {
@@ -680,6 +686,232 @@ export const reorderAmenities = async (req, res, next) => {
 
     res.status(StatusCodes.OK).json({
       amenities: updatedAmenities,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ==================== VERIFICATION MANAGEMENT ====================
+
+// Get all pending owner verifications
+export const getPendingVerifications = async (req, res, next) => {
+  try {
+    const users = await User.find({
+      roles: 'owner',
+      isVerified: false,
+      'verificationInfo.nationalId': { $exists: true, $ne: null },
+    })
+      .select('name email phone createdAt verificationInfo')
+      .sort({ createdAt: -1 })
+
+    res.status(StatusCodes.OK).json({ users })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Approve owner verification
+export const approveOwnerVerification = async (req, res, next) => {
+  try {
+    const { userId } = req.params
+
+    const user = await User.findById(userId)
+
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestError('User is already verified')
+    }
+
+    user.isVerified = true
+    user.activeRole = 'owner' // Allow them to switch to owner view
+    user.role = 'owner'
+    await user.save()
+
+    // Send approval email
+    try {
+      await sendOwnerVerificationApprovedEmail({
+        to: user.email,
+        name: user.name,
+      })
+    } catch (emailError) {
+      console.error('Error sending approval email:', emailError)
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Owner verification approved',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Reject owner verification
+export const rejectOwnerVerification = async (req, res, next) => {
+  try {
+    const { userId } = req.params
+    const { reason } = req.body
+
+    const user = await User.findById(userId)
+
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+
+    // Remove owner role if rejected
+    user.roles = user.roles.filter((role) => role !== 'owner')
+    user.isVerified = false
+
+    // If they were in owner view, switch to client
+    if (user.activeRole === 'owner') {
+      user.activeRole = 'client'
+      user.role = 'client'
+    }
+
+    await user.save()
+
+    // Send rejection email
+    try {
+      await sendOwnerVerificationRejectedEmail({
+        to: user.email,
+        name: user.name,
+        reason: reason || 'Your verification information did not meet our requirements.',
+      })
+    } catch (emailError) {
+      console.error('Error sending rejection email:', emailError)
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Owner verification rejected',
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Get all pending upgrade requests
+export const getPendingUpgradeRequests = async (req, res, next) => {
+  try {
+    const users = await User.find({
+      'upgradeRequest.status': 'pending',
+    })
+      .select(
+        'name email phone createdAt upgradeRequest.verificationInfo upgradeRequest.submittedAt'
+      )
+      .sort({ 'upgradeRequest.submittedAt': -1 })
+
+    res.status(StatusCodes.OK).json({ users })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Approve upgrade request
+export const approveUpgradeRequest = async (req, res, next) => {
+  try {
+    const { userId } = req.params
+
+    const user = await User.findById(userId)
+
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+
+    if (!user.upgradeRequest || user.upgradeRequest.status !== 'pending') {
+      throw new BadRequestError('No pending upgrade request found')
+    }
+
+    // Add owner role
+    if (!user.roles.includes('owner')) {
+      user.roles.push('owner')
+    }
+
+    // Update upgrade request
+    user.upgradeRequest.status = 'approved'
+    user.upgradeRequest.reviewedAt = new Date()
+    user.upgradeRequest.reviewedBy = req.user.userId
+
+    // Copy verification info
+    user.verificationInfo = user.upgradeRequest.verificationInfo
+    user.isVerified = true
+
+    await user.save()
+
+    // Send approval email
+    try {
+      await sendUpgradeRequestApprovedEmail({
+        to: user.email,
+        name: user.name,
+      })
+    } catch (emailError) {
+      console.error('Error sending approval email:', emailError)
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Upgrade request approved',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        roles: user.roles,
+        isVerified: user.isVerified,
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Reject upgrade request
+export const rejectUpgradeRequest = async (req, res, next) => {
+  try {
+    const { userId } = req.params
+    const { reason } = req.body
+
+    const user = await User.findById(userId)
+
+    if (!user) {
+      throw new NotFoundError('User not found')
+    }
+
+    if (!user.upgradeRequest || user.upgradeRequest.status !== 'pending') {
+      throw new BadRequestError('No pending upgrade request found')
+    }
+
+    // Update upgrade request
+    user.upgradeRequest.status = 'rejected'
+    user.upgradeRequest.reviewedAt = new Date()
+    user.upgradeRequest.reviewedBy = req.user.userId
+    user.upgradeRequest.rejectionReason = reason
+
+    await user.save()
+
+    // Send rejection email
+    try {
+      await sendUpgradeRequestRejectedEmail({
+        to: user.email,
+        name: user.name,
+        reason: reason || 'Your upgrade request did not meet our requirements.',
+      })
+    } catch (emailError) {
+      console.error('Error sending rejection email:', emailError)
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Upgrade request rejected',
     })
   } catch (err) {
     next(err)

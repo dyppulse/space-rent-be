@@ -2,6 +2,7 @@ import express from 'express'
 
 import {
   createBooking,
+  getUserBookings,
   getOwnerBookings,
   getBooking,
   updateBookingStatus,
@@ -11,7 +12,11 @@ import { authenticateUser } from '../middleware/auth.js'
 
 const router = express.Router()
 
-router.post('/', createBooking)
+// Create booking - now requires authentication
+router.post('/', authenticateUser, createBooking)
+
+// Get user bookings - for regular clients
+router.get('/user', authenticateUser, getUserBookings)
 
 router.get('/owner', authenticateUser, getOwnerBookings)
 
