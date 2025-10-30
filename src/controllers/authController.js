@@ -78,6 +78,7 @@ export const registerClient = async (req, res, next) => {
         activeRole: user.activeRole,
         emailVerified: user.emailVerified,
         isVerified: user.isVerified,
+        upgradeRequest: user.upgradeRequest || null,
       },
       requiresEmailVerification: true,
     })
@@ -165,6 +166,7 @@ export const registerOwner = async (req, res, next) => {
         activeRole: user.activeRole,
         emailVerified: user.emailVerified,
         isVerified: user.isVerified,
+        upgradeRequest: user.upgradeRequest || null,
       },
       requiresEmailVerification: true,
       requiresAdminVerification: true,
@@ -229,6 +231,11 @@ export const login = async (req, res, next) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        roles: user.roles,
+        activeRole: user.activeRole,
+        emailVerified: user.emailVerified,
+        isVerified: user.isVerified,
+        upgradeRequest: user.upgradeRequest || null,
       },
     })
   } catch (err) {
@@ -260,6 +267,7 @@ export const getCurrentUser = async (req, res) => {
       activeRole: user.activeRole,
       emailVerified: user.emailVerified,
       isVerified: user.isVerified,
+      upgradeRequest: user.upgradeRequest || null,
     },
   })
 }
