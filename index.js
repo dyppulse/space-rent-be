@@ -13,6 +13,7 @@ import adminRoutes from './src/routes/admin.js'
 import authRoutes from './src/routes/auth.js'
 import bookingRoutes from './src/routes/bookings.js'
 import featureFlagRoutes from './src/routes/featureFlags.js'
+import leadRoutes from './src/routes/leads.js'
 import locationRoutes from './src/routes/locations.js'
 import paymentRoutes from './src/routes/payments.js'
 import spaceRoutes from './src/routes/spaces.js'
@@ -70,6 +71,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/locations', locationRoutes)
 app.use('/api/feature-flags', featureFlagRoutes)
 app.use('/api/payments', paymentRoutes)
+app.use('/api/leads', leadRoutes)
 
 // Health check route
 app.get('/health', (req, res) => {
