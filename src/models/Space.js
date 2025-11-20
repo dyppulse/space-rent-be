@@ -154,7 +154,7 @@ const spaceSchema = new mongoose.Schema(
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Please provide space owner'],
+      required: false, // Made optional for now
     },
     isActive: {
       type: Boolean,

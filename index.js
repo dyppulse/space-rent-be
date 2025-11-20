@@ -13,6 +13,7 @@ import adminRoutes from './src/routes/admin.js'
 import authRoutes from './src/routes/auth.js'
 import bookingRoutes from './src/routes/bookings.js'
 import featureFlagRoutes from './src/routes/featureFlags.js'
+import leadRoutes from './src/routes/leads.js'
 import locationRoutes from './src/routes/locations.js'
 import paymentRoutes from './src/routes/payments.js'
 import spaceRoutes from './src/routes/spaces.js'
@@ -41,20 +42,40 @@ cloudinary.config({
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:3000',
   'https://space-rent-fe.vercel.app',
   process.env.FRONTEND_APP_URL,
-]
+].filter(Boolean) // Remove undefined values
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        return callback(null, true)
       }
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+
+      // In development, allow any localhost origin
+      if (process.env.NODE_ENV !== 'production') {
+        if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+          return callback(null, true)
+        }
+      }
+
+      callback(new Error('Not allowed by CORS'))
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 )
 app.use(cookieParser())
@@ -70,6 +91,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/locations', locationRoutes)
 app.use('/api/feature-flags', featureFlagRoutes)
 app.use('/api/payments', paymentRoutes)
+app.use('/api/leads', leadRoutes)
 
 // Health check route
 app.get('/health', (req, res) => {
