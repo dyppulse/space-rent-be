@@ -31,6 +31,7 @@ import {
   rejectUpgradeRequest,
 } from '../controllers/adminController.js'
 import { authenticateUser, authorizeRoles } from '../middleware/auth.js'
+import { upload } from '../middleware/multer.js'
 
 const router = express.Router()
 
@@ -53,11 +54,41 @@ router
 router
   .route('/spaces')
   .get(authenticateUser, authorizeRoles('superadmin'), getAllSpaces)
-  .post(authenticateUser, authorizeRoles('superadmin'), createSpace)
+  .post(
+    authenticateUser,
+    authorizeRoles('superadmin'),
+    (req, res, next) => {
+      upload.array('images', 10)(req, res, (err) => {
+        if (err) {
+          console.error('Multer error:', err)
+          return res.status(400).json({
+            error: err.message || 'File upload error',
+          })
+        }
+        next()
+      })
+    },
+    createSpace
+  )
 
 router
   .route('/spaces/:id')
-  .patch(authenticateUser, authorizeRoles('superadmin'), updateSpace)
+  .patch(
+    authenticateUser,
+    authorizeRoles('superadmin'),
+    (req, res, next) => {
+      upload.array('images', 10)(req, res, (err) => {
+        if (err) {
+          console.error('Multer error:', err)
+          return res.status(400).json({
+            error: err.message || 'File upload error',
+          })
+        }
+        next()
+      })
+    },
+    updateSpace
+  )
   .delete(authenticateUser, authorizeRoles('superadmin'), deleteSpace)
 
 // Bookings Management

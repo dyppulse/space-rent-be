@@ -12,6 +12,11 @@ import {
   sendUpgradeRequestApprovedEmail,
   sendUpgradeRequestRejectedEmail,
 } from '../utils/emailService.js'
+import {
+  uploadImagesToCloudinary,
+  deleteFromCloudinary,
+  // deleteMultipleFromCloudinary,
+} from '../utils/uploadImagesToCloudinary.js'
 
 // Dashboard Overview
 export const getDashboardStats = async (req, res, next) => {
@@ -239,13 +244,20 @@ export const getAllSpaces = async (req, res, next) => {
     const query = {}
 
     if (owner) query.owner = owner
-    if (district) query['location.district'] = { $regex: district, $options: 'i' }
+    // Use districtName (string) instead of district (ObjectId) for regex
+    if (district) query['location.districtName'] = { $regex: district, $options: 'i' }
     if (isActive !== undefined) query.isActive = isActive === 'true'
     if (search) {
+      // Use string fields for search, not ObjectId fields
+      const searchRegex = { $regex: search, $options: 'i' }
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { 'location.district': { $regex: search, $options: 'i' } },
-        { 'location.city': { $regex: search, $options: 'i' } },
+        { name: searchRegex },
+        { 'location.districtName': searchRegex },
+        { 'location.countyName': searchRegex },
+        { 'location.city': searchRegex },
+        { 'location.state': searchRegex },
+        { 'location.address': searchRegex },
+        { description: searchRegex },
       ]
     }
 
@@ -275,7 +287,57 @@ export const getAllSpaces = async (req, res, next) => {
 
 export const createSpace = async (req, res, next) => {
   try {
-    const spaceData = req.body
+    // Parse JSON fields if they're strings (from FormData)
+    let spaceData = { ...req.body }
+    try {
+      if (typeof spaceData.amenities === 'string' && spaceData.amenities) {
+        spaceData.amenities = JSON.parse(spaceData.amenities)
+      }
+      if (typeof spaceData.location === 'string' && spaceData.location) {
+        spaceData.location = JSON.parse(spaceData.location)
+      }
+      if (typeof spaceData.capacity === 'string' && spaceData.capacity) {
+        spaceData.capacity = JSON.parse(spaceData.capacity)
+      }
+      if (typeof spaceData.price === 'string' && spaceData.price) {
+        spaceData.price = JSON.parse(spaceData.price)
+      }
+    } catch (parseError) {
+      throw new BadRequestError('Invalid JSON in form data: ' + parseError.message)
+    }
+    if (spaceData.isActive === 'true' || spaceData.isActive === true) {
+      spaceData.isActive = true
+    } else if (spaceData.isActive === 'false' || spaceData.isActive === false) {
+      spaceData.isActive = false
+    }
+
+    // Upload images if they exist
+    let images = []
+    if (req.files && req.files.length > 0) {
+      images = await uploadImagesToCloudinary(req.files)
+    }
+
+    // Attach image data to space
+    spaceData.images = images
+
+    // Handle geospatial point - if coordinates are provided, create a proper Point
+    if (spaceData.location && spaceData.location.coordinates) {
+      const { lat, lng } = spaceData.location.coordinates
+      if (lat && lng) {
+        spaceData.location.point = {
+          type: 'Point',
+          coordinates: [lng, lat], // MongoDB expects [longitude, latitude]
+        }
+      }
+      // Remove the legacy coordinates field
+      delete spaceData.location.coordinates
+    }
+
+    // Only set owner if provided (optional for now)
+    if (!spaceData.owner) {
+      delete spaceData.owner
+    }
+
     const space = await Space.create(spaceData)
 
     const populatedSpace = await Space.findById(space._id).populate('owner', 'name email')
@@ -291,19 +353,95 @@ export const createSpace = async (req, res, next) => {
 export const updateSpace = async (req, res, next) => {
   try {
     const { id } = req.params
-    const updateData = req.body
 
-    const space = await Space.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    }).populate('owner', 'name email')
+    // Parse JSON fields if they're strings (from FormData)
+    let updateData = { ...req.body }
+    try {
+      if (typeof updateData.amenities === 'string' && updateData.amenities) {
+        updateData.amenities = JSON.parse(updateData.amenities)
+      }
+      if (typeof updateData.location === 'string' && updateData.location) {
+        updateData.location = JSON.parse(updateData.location)
+      }
+      if (typeof updateData.capacity === 'string' && updateData.capacity) {
+        updateData.capacity = JSON.parse(updateData.capacity)
+      }
+      if (typeof updateData.price === 'string' && updateData.price) {
+        updateData.price = JSON.parse(updateData.price)
+      }
+      if (typeof updateData.imagesToRemove === 'string' && updateData.imagesToRemove) {
+        updateData.imagesToRemove = JSON.parse(updateData.imagesToRemove)
+      }
+    } catch (parseError) {
+      throw new BadRequestError('Invalid JSON in form data: ' + parseError.message)
+    }
+    if (updateData.isActive === 'true' || updateData.isActive === true) {
+      updateData.isActive = true
+    } else if (updateData.isActive === 'false' || updateData.isActive === false) {
+      updateData.isActive = false
+    }
 
+    // Handle new image uploads
+    let uploadedImages = []
+    if (req.files && req.files.length > 0) {
+      uploadedImages = await uploadImagesToCloudinary(req.files)
+    }
+
+    // Handle image removals
+    const imagesToRemove = updateData.imagesToRemove || []
+    delete updateData.imagesToRemove
+
+    // Find the space first
+    const space = await Space.findById(id)
     if (!space) {
       throw new NotFoundError('Space not found')
     }
 
+    // Build update object with MongoDB operators
+    const updateObject = { ...updateData }
+    delete updateObject.$pull
+    delete updateObject.$push
+
+    // Delete removed images from Cloudinary and prepare $pull
+    if (imagesToRemove.length > 0) {
+      // Find the public_ids for the URLs to remove
+      const imagesToDelete = space.images.filter((img) => imagesToRemove.includes(img.url))
+
+      // Delete from Cloudinary using public_id
+      for (const image of imagesToDelete) {
+        if (image.public_id) {
+          await deleteFromCloudinary(image.public_id)
+        }
+      }
+
+      // Remove from MongoDB using URL
+      updateObject.$pull = { images: { url: { $in: imagesToRemove } } }
+    }
+
+    // Add new images with $push
+    if (uploadedImages.length > 0) {
+      updateObject.$push = { images: { $each: uploadedImages } }
+    }
+
+    // Handle geospatial point
+    if (updateObject.location && updateObject.location.coordinates) {
+      const { lat, lng } = updateObject.location.coordinates
+      if (lat && lng) {
+        updateObject.location.point = {
+          type: 'Point',
+          coordinates: [lng, lat],
+        }
+      }
+      delete updateObject.location.coordinates
+    }
+
+    const updatedSpace = await Space.findByIdAndUpdate(id, updateObject, {
+      new: true,
+      runValidators: true,
+    }).populate('owner', 'name email')
+
     res.status(StatusCodes.OK).json({
-      space,
+      space: updatedSpace,
     })
   } catch (err) {
     next(err)
