@@ -50,6 +50,11 @@ const leadSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    space: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Space',
+      default: null,
+    },
     status: {
       type: String,
       enum: ['new', 'contacted', 'converted', 'closed'],
@@ -70,6 +75,7 @@ const leadSchema = new mongoose.Schema(
 
 // Index for querying leads by status and date
 leadSchema.index({ status: 1, createdAt: -1 })
+leadSchema.index({ space: 1, createdAt: -1 })
 
 const Lead = mongoose.model('Lead', leadSchema)
 

@@ -1,13 +1,25 @@
 import { StatusCodes } from 'http-status-codes'
+import mongoose from 'mongoose'
 
 import { BadRequestError, NotFoundError } from '../errors/index.js'
 import Lead from '../models/Lead.js'
+import Space from '../models/Space.js'
 import logger from '../utils/logger.js'
 
 // Create a new lead (public endpoint)
 export const createLead = async (req, res, next) => {
-  const { name, email, phone, eventType, eventDate, city, guestCount, budgetRange, notes } =
-    req.body
+  const {
+    name,
+    email,
+    phone,
+    eventType,
+    eventDate,
+    city,
+    guestCount,
+    budgetRange,
+    notes,
+    spaceId,
+  } = req.body
 
   try {
     // Validate required fields
@@ -58,6 +70,27 @@ export const createLead = async (req, res, next) => {
       })
     }
 
+    // Validate optional space reference
+    let space = null
+    if (spaceId) {
+      if (!mongoose.Types.ObjectId.isValid(spaceId)) {
+        const error = new BadRequestError('Invalid space reference provided')
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
+
+      space = await Space.findById(spaceId).select('_id name')
+      if (!space) {
+        const error = new NotFoundError('Selected space could not be found')
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
+    }
+
     // Create lead
     const lead = await Lead.create({
       name,
@@ -69,13 +102,20 @@ export const createLead = async (req, res, next) => {
       guestCount: parseInt(guestCount, 10),
       budgetRange,
       notes: notes || '',
+      space: space ? space._id : null,
       status: 'new',
+    })
+
+    await lead.populate({
+      path: 'space',
+      select: 'name location images price isActive',
     })
 
     logger.info('New lead created', {
       leadId: lead._id,
       email: lead.email,
       eventType: lead.eventType,
+      spaceId: space ? space._id : null,
     })
 
     res.status(StatusCodes.CREATED).json({
@@ -92,13 +132,32 @@ export const createLead = async (req, res, next) => {
 // Get all leads (admin only)
 export const getLeads = async (req, res, next) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query
-    const query = status ? { status } : {}
+    const { status, spaceId, page = 1, limit = 20 } = req.query
+    const query = {}
+
+    if (status) {
+      query.status = status
+    }
+
+    if (spaceId) {
+      if (!mongoose.Types.ObjectId.isValid(spaceId)) {
+        const error = new BadRequestError('Please provide a valid space reference')
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        })
+      }
+      query.space = spaceId
+    }
 
     const leads = await Lead.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit, 10))
       .skip((parseInt(page, 10) - 1) * parseInt(limit, 10))
+      .populate({
+        path: 'space',
+        select: 'name location images price isActive',
+      })
 
     const total = await Lead.countDocuments(query)
 
@@ -122,7 +181,10 @@ export const getLeads = async (req, res, next) => {
 export const getLead = async (req, res, next) => {
   try {
     const { id } = req.params
-    const lead = await Lead.findById(id)
+    const lead = await Lead.findById(id).populate({
+      path: 'space',
+      select: 'name description location price capacity amenities images isActive',
+    })
 
     if (!lead) {
       const error = new NotFoundError('Lead not found')
@@ -156,7 +218,14 @@ export const updateLeadStatus = async (req, res, next) => {
       })
     }
 
-    const lead = await Lead.findByIdAndUpdate(id, { status }, { new: true, runValidators: true })
+    const lead = await Lead.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate({
+      path: 'space',
+      select: 'name description location price capacity amenities images isActive',
+    })
 
     if (!lead) {
       const error = new NotFoundError('Lead not found')
