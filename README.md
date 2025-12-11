@@ -104,7 +104,9 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 EMAIL_HOST=smtp.yourprovider.com
 EMAIL_PORT=587
 EMAIL_USER=your_email
-EMAIL_PASS=your_email_password
+EMAIL_PASSWORD=your_email_password
+EMAIL_FROM=noreply@yourdomain.com
+ADMIN_EMAIL=admin@yourdomain.com
 ```
 
 ### 4. Run the Development Server

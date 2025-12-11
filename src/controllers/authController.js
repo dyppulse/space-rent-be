@@ -4,11 +4,6 @@ import { StatusCodes } from 'http-status-codes'
 
 import { BadRequestError, UnauthenticatedError } from '../errors/index.js'
 import User from '../models/User.js'
-import {
-  sendVerificationEmail,
-  sendOwnerVerificationPendingEmail,
-  sendUpgradeRequestSubmittedEmail,
-} from '../utils/emailService.js'
 
 // Register a new client
 export const registerClient = async (req, res, next) => {
@@ -41,18 +36,6 @@ export const registerClient = async (req, res, next) => {
       emailVerificationExpires,
       emailVerified: false,
     })
-
-    // Send verification email
-    try {
-      await sendVerificationEmail({
-        to: user.email,
-        name: user.name,
-        verificationToken: emailVerificationToken,
-      })
-    } catch (emailError) {
-      console.error('Error sending verification email:', emailError)
-      // Continue even if email fails
-    }
 
     const token = user.createJWT()
 
@@ -125,22 +108,6 @@ export const registerOwner = async (req, res, next) => {
         },
       }),
     })
-
-    // Send verification emails
-    try {
-      await sendVerificationEmail({
-        to: user.email,
-        name: user.name,
-        verificationToken: emailVerificationToken,
-      })
-      await sendOwnerVerificationPendingEmail({
-        to: user.email,
-        name: user.name,
-      })
-    } catch (emailError) {
-      console.error('Error sending verification email:', emailError)
-      // Continue even if email fails
-    }
 
     const token = user.createJWT()
 
@@ -375,16 +342,6 @@ export const submitUpgradeRequest = async (req, res, next) => {
     }
 
     await user.save()
-
-    // Send confirmation email
-    try {
-      await sendUpgradeRequestSubmittedEmail({
-        to: user.email,
-        name: user.name,
-      })
-    } catch (emailError) {
-      console.error('Error sending upgrade request email:', emailError)
-    }
 
     res.status(StatusCodes.OK).json({
       success: true,

@@ -7,12 +7,6 @@ import LocationRef from '../models/LocationRef.js'
 import Space from '../models/Space.js'
 import User from '../models/User.js'
 import {
-  sendOwnerVerificationApprovedEmail,
-  sendOwnerVerificationRejectedEmail,
-  sendUpgradeRequestApprovedEmail,
-  sendUpgradeRequestRejectedEmail,
-} from '../utils/emailService.js'
-import {
   uploadImagesToCloudinary,
   deleteFromCloudinary,
   // deleteMultipleFromCloudinary,
@@ -869,16 +863,6 @@ export const approveOwnerVerification = async (req, res, next) => {
     user.role = 'owner'
     await user.save()
 
-    // Send approval email
-    try {
-      await sendOwnerVerificationApprovedEmail({
-        to: user.email,
-        name: user.name,
-      })
-    } catch (emailError) {
-      console.error('Error sending approval email:', emailError)
-    }
-
     res.status(StatusCodes.OK).json({
       success: true,
       message: 'Owner verification approved',
@@ -898,7 +882,6 @@ export const approveOwnerVerification = async (req, res, next) => {
 export const rejectOwnerVerification = async (req, res, next) => {
   try {
     const { userId } = req.params
-    const { reason } = req.body
 
     const user = await User.findById(userId)
 
@@ -917,17 +900,6 @@ export const rejectOwnerVerification = async (req, res, next) => {
     }
 
     await user.save()
-
-    // Send rejection email
-    try {
-      await sendOwnerVerificationRejectedEmail({
-        to: user.email,
-        name: user.name,
-        reason: reason || 'Your verification information did not meet our requirements.',
-      })
-    } catch (emailError) {
-      console.error('Error sending rejection email:', emailError)
-    }
 
     res.status(StatusCodes.OK).json({
       success: true,
@@ -986,16 +958,6 @@ export const approveUpgradeRequest = async (req, res, next) => {
 
     await user.save()
 
-    // Send approval email
-    try {
-      await sendUpgradeRequestApprovedEmail({
-        to: user.email,
-        name: user.name,
-      })
-    } catch (emailError) {
-      console.error('Error sending approval email:', emailError)
-    }
-
     res.status(StatusCodes.OK).json({
       success: true,
       message: 'Upgrade request approved',
@@ -1035,17 +997,6 @@ export const rejectUpgradeRequest = async (req, res, next) => {
     user.upgradeRequest.rejectionReason = reason
 
     await user.save()
-
-    // Send rejection email
-    try {
-      await sendUpgradeRequestRejectedEmail({
-        to: user.email,
-        name: user.name,
-        reason: reason || 'Your upgrade request did not meet our requirements.',
-      })
-    } catch (emailError) {
-      console.error('Error sending rejection email:', emailError)
-    }
 
     res.status(StatusCodes.OK).json({
       success: true,

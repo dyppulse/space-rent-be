@@ -4,7 +4,6 @@ import mongoose from 'mongoose'
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../errors/index.js'
 import Booking from '../models/Booking.js'
 import Space from '../models/Space.js'
-import { sendBookingConfirmationEmail } from '../utils/emailService.js'
 
 // Create a new booking (public endpoint)
 export const createBooking = async (req, res, next) => {
@@ -192,22 +191,6 @@ export const createBooking = async (req, res, next) => {
 
     // Create the booking
     const booking = await Booking.create(bookingData)
-
-    // Optional: Send confirmation email
-    try {
-      await sendBookingConfirmationEmail({
-        to: clientEmail,
-        spaceName: space.name,
-        bookingId: booking._id,
-        eventDate,
-        startTime,
-        endTime,
-        totalPrice,
-      })
-    } catch (error) {
-      console.error('Failed to send confirmation email:', error)
-      // Continue with the booking process even if email fails
-    }
 
     res.status(StatusCodes.CREATED).json({ booking })
   } catch (err) {
@@ -466,13 +449,6 @@ export const updateBookingStatus = async (req, res, next) => {
       path: 'space',
       select: 'name location images price',
     })
-
-    // Optional: Send status update email to client
-    try {
-      // Implementation of email notification would go here
-    } catch (error) {
-      console.error('Failed to send status update email:', error)
-    }
 
     res.status(StatusCodes.OK).json({ booking })
   } catch (err) {
